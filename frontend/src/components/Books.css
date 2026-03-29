@@ -1,0 +1,108 @@
+/* Books.css */
+
+.books-page {
+  padding: 80px 20px;
+  min-height: 100vh;
+  background-color: #1a1a1a;
+  color: #eaeaea;
+}
+
+.books-intro {
+  text-align: center;
+  margin-bottom: 50px;
+  color: #cccccc;
+  font-size: 1.1rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Flexbox keeps the 2 books centered without stretching them */
+.books-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 40px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* --- BOOK CARDS --- */
+.book-card {
+  background: #333333;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  width: 100%;
+  max-width: 400px; /* Ensures the cards don't get too wide */
+  display: flex;
+  flex-direction: column;
+}
+
+.book-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+.book-cover {
+  width: 100%;
+  aspect-ratio: 3 / 4; /* Standard paperback book shape */
+  object-fit: cover;
+  border-bottom: 2px solid #444; /* Subtle divider below the image */
+}
+
+.book-info {
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Pushes the footer to the bottom */
+}
+
+.book-info h3 {
+  margin: 0 0 5px 0;
+  color: #ffffff;
+  font-size: 1.5rem;
+}
+
+.book-author {
+  color: #e67e22; /* Saffron accent for the author */
+  font-style: italic;
+  margin-bottom: 15px;
+  font-weight: 500;
+}
+
+.book-description {
+  color: #bbbbbb;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+/* --- CARD FOOTER (Price & Button) --- */
+.book-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto; /* Always sits at the bottom of the card */
+}
+
+.book-price {
+  font-weight: 600;
+  color: #eaeaea;
+}
+
+.read-btn {
+  background-color: #e67e22;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.read-btn:hover {
+  background-color: #d35400;
+  transform: translateY(-2px);
+}

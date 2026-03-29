@@ -1,0 +1,164 @@
+/* Contact.css */
+
+.contact-page {
+  padding: 80px 20px;
+  min-height: 100vh;
+  background-color: #1a1a1a;
+  color: #eaeaea;
+}
+
+.contact-header {
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto 50px auto;
+}
+
+.contact-header h2 {
+  font-size: 2.5rem;
+  color: #e67e22;
+  margin-bottom: 15px;
+}
+
+.contact-header p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: #cccccc;
+}
+
+/* --- TWO COLUMN LAYOUT --- */
+.contact-content {
+  display: flex;
+  gap: 40px;
+  max-width: 1000px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+
+.contact-form-container, .contact-info {
+  background-color: #242424;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.contact-form-container {
+  flex: 2; /* Takes up more space than the info box */
+}
+
+.contact-info {
+  flex: 1;
+}
+
+/* --- FORM STYLING --- */
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.input-group label {
+  font-weight: 500;
+  color: #ffffff;
+  font-size: 0.95rem;
+}
+
+.input-group input, 
+.input-group select, 
+.input-group textarea {
+  width: 100%;
+  padding: 12px 15px;
+  background-color: #333333;
+  border: 1px solid #444444;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.3s ease;
+}
+
+/* Change border color on focus */
+.input-group input:focus, 
+.input-group select:focus, 
+.input-group textarea:focus {
+  outline: none;
+  border-color: #e67e22;
+}
+
+/* Placeholder text color */
+::placeholder {
+  color: #888888;
+}
+
+.submit-btn {
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* --- SUCCESS MESSAGE --- */
+.success-message {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.success-message h3 {
+  color: #e67e22;
+  font-size: 2rem;
+  margin-bottom: 15px;
+}
+
+.success-message p {
+  color: #cccccc;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+/* --- INFO BOX STYLING --- */
+.contact-info h3 {
+  color: #e67e22;
+  margin-top: 0;
+  margin-bottom: 25px;
+  font-size: 1.5rem;
+  border-bottom: 1px solid #444;
+  padding-bottom: 15px;
+}
+
+.info-item {
+  margin-bottom: 25px;
+}
+
+.info-item h4 {
+  color: #ffffff;
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+}
+
+.info-item p {
+  color: #cccccc;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.info-item .note {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: #999999;
+  margin-top: 5px;
+}
+
+/* --- MOBILE RESPONSIVENESS --- */
+@media (max-width: 768px) {
+  .contact-content {
+    flex-direction: column; /* Stacks the form and info on phones */
+  }
+  
+  .contact-form-container, .contact-info {
+    width: 100%;
+  }
+}

@@ -1,0 +1,119 @@
+/* --- GLOBAL RESETS & ROOT FIX --- */
+*, *::before, *::after {
+  box-sizing: border-box; 
+}
+
+html, body {
+  overflow-x: hidden; 
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #1a1a1a; /* Keeps your dark theme consistent */
+}
+
+/* This targets the main React container and forces it to stack vertically */
+#root {
+  display: block; /* THIS KILLS VITE's HORIZONTAL FLEXBOX BUG */
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* my styles */
+.nav {
+  display: flex;
+  justify-content: space-between; /* Pushes logo left and nav-links right */
+  align-items: center;
+  height: 60px;
+  background-color: #333;
+  color: white;
+  padding: 0 2rem;
+}
+
+.nav-logo h2 {
+  margin: 0;
+  color: white; /* Optional: adjust to match your logo styling */
+}
+
+.nav-links {
+  display: flex;
+  gap: 20px; /* Adds space between your links */
+}
+
+.nav-item {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.nav-item:hover {
+  color: #ccc; /* Slight hover effect */
+}
+
+/* This hides the link when the route is active */
+.hidden-link {
+  display: none;
+}
+
+/* --- HAMBURGER MENU & MOBILE NAV STYLES --- */
+
+/* Hide the hamburger icon on desktop */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  cursor: pointer;
+  gap: 5px;
+  z-index: 100; /* Keeps it above the menu */
+}
+
+/* The three lines of the hamburger icon */
+.hamburger .bar {
+  width: 25px;
+  height: 3px;
+  background-color: white;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+/* Mobile Responsiveness */
+@media screen and (max-width: 768px) {
+  .hamburger {
+    display: flex; /* Show hamburger on mobile */
+  }
+
+  .nav-links {
+    position: absolute;
+    top: 60px; /* Aligns just below your 60px height navbar */
+    left: 0;
+    width: 100%;
+    background-color: #333333;
+    flex-direction: column; /* Stacks links vertically */
+    align-items: center;
+    padding: 0;
+    
+    /* Hide the menu by default by sliding it up and fading it out */
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.4s ease, opacity 0.4s ease;
+    z-index: 99; /* Ensures it drops down OVER the page content */
+    border-bottom: 2px solid #e67e22; /* Adds a nice saffron accent line at the bottom */
+  }
+
+  /* When the 'open' class is added via React state */
+  .nav-links.open {
+    max-height: 400px; /* Allows enough room for the links */
+    opacity: 1;
+    padding: 20px 0;
+  }
+
+  /* Add some spacing to the vertical links */
+  .nav-item {
+    padding: 15px 0;
+    width: 100%;
+    text-align: center;
+  }
+}

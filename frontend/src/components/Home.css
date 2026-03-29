@@ -1,0 +1,239 @@
+/* Home.css */
+
+.home-page {
+  /* Ensures no weird gaps if the page is shorter than the screen */
+  min-height: 100vh; 
+  background-color: #1a1a1a;
+  color: #eaeaea;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  text-align: center;
+}
+
+/* --- HERO SECTION --- */
+.hero-section {
+  position: relative;
+  height: 80vh; /* Takes up 80% of the screen height */
+  /* Placeholder spiritual background image */
+  background-image: url('https://images.unsplash.com/photo-1593811167562-9cef47bfc4d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Darkens the background image so white text is readable */
+/* Darkens the background image so white text is readable */
+.hero-overlay {
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 40px;
+  border-radius: 12px;
+  text-align: center;
+  max-width: 800px;
+  width: 90%; /* Keeps the box from touching the screen edges on mobile */
+}
+
+.hero-overlay h1 {
+  font-size: 3.5rem;
+  margin-bottom: 10px;
+  color: #ffffff;
+  line-height: 1.2; /* Prevents lines of text from crashing into each other */
+}
+
+.tagline {
+  font-size: 1.5rem;
+  margin-bottom: 30px;
+  font-style: italic;
+  color: #cccccc;
+}
+
+/* --- MOBILE RESPONSIVENESS FOR THE HERO SECTION --- */
+@media (max-width: 768px) {
+  .hero-overlay {
+    padding: 30px 20px; /* Reduces padding to give text more breathing room */
+  }
+
+  .hero-overlay h1 {
+    font-size: 2rem; /* Shrinks the massive title for phone screens */
+  }
+
+  .tagline {
+    font-size: 1.1rem; /* Shrinks the subtitle */
+    margin-bottom: 20px;
+  }
+}
+
+.cta-button {
+  background-color: #e67e22;
+  color: #fff;
+  border: none;
+  padding: 15px 30px;
+  font-size: 1.1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.cta-button:hover {
+  background-color: #d35400;
+  transform: translateY(-2px);
+}
+
+/* --- GENERAL SECTION STYLING --- */
+section {
+  padding: 80px 0;
+}
+
+h2 {
+  font-size: 2.2rem;
+  color: #e67e22;
+  margin-bottom: 30px;
+}
+
+/* --- INTRO SECTION --- */
+.intro-section {
+  background-color: #242424;
+}
+
+.description-placeholder {
+  font-size: 1.2rem;
+  line-height: 1.8;
+  max-width: 800px;
+  margin: 0 auto;
+  color: #cccccc;
+}
+
+/* --- PRACTICES GRID --- */
+.practices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  margin-top: 40px;
+}
+
+.practice-card {
+  background-color: #333333;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: transform 0.3s;
+}
+
+.practice-card:hover {
+  transform: translateY(-5px);
+}
+
+.practice-card h3 {
+  font-size: 1.4rem;
+  color: #ffffff;
+  margin-bottom: 15px;
+}
+
+.practice-card p {
+  line-height: 1.6;
+  color: #bbbbbb;
+}
+
+/* --- MAP SECTION --- */
+.location-section p {
+  margin-bottom: 30px;
+  font-size: 1.1rem;
+}
+
+.map-container {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  height: 400px;
+  background-color: #333;
+  border-radius: 12px;
+  overflow: hidden;
+  /* Removed the flexbox centering rules so the iframe can just fill the space */
+  border: 1px solid #444;
+}
+
+/* .map-placeholder {
+  color: #888;
+  font-size: 1.2rem;
+} */
+
+
+/* --- TESTIMONIALS / COMMUNITY VOICES --- */
+.testimonials-section {
+  background-color: #242424; 
+}
+
+.section-subtitle {
+  color: #cccccc;
+  margin-bottom: 50px;
+  font-size: 1.1rem;
+}
+
+/* Swiper specific spacing */
+.testimonial-swiper {
+  width: 100%;
+  padding-bottom: 60px !important; /* Forces room for the pagination dots */
+}
+
+/* Colors the Swiper pagination dots to match your Saffron theme */
+.testimonial-swiper .swiper-pagination-bullet {
+  background-color: #888888;
+  opacity: 0.5;
+}
+
+.testimonial-swiper .swiper-pagination-bullet-active {
+  background-color: #e67e22;
+  opacity: 1;
+}
+
+/* The card styling remains mostly the same, but we make sure they stretch to equal heights if text length varies */
+.testimonial-card {
+  background-color: #333333;
+  padding: 40px 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  position: relative;
+  text-align: left;
+  transition: transform 0.3s ease;
+  height: 100%; /* Ensures all cards in the row are the same height */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.testimonial-card:hover {
+  transform: translateY(-5px);
+}
+
+.testimonial-card::before {
+  content: '❝';
+  font-size: 5rem;
+  color: rgba(230, 126, 34, 0.15); 
+  position: absolute;
+  top: 10px;
+  left: 20px;
+  line-height: 1;
+  font-family: serif;
+}
+
+.quote {
+  font-size: 1.1rem;
+  font-style: italic;
+  color: #eaeaea;
+  line-height: 1.6;
+  margin-bottom: 25px;
+  position: relative; 
+  z-index: 1;
+}
+
+.author {
+  color: #e67e22;
+  font-weight: 600;
+  text-align: right;
+  font-size: 1.05rem;
+}
