@@ -1,24 +1,38 @@
-import React, { useState } from 'react';
-import { Routes, Route, NavLink } from 'react-router-dom';
+import React, { useState, useContext } from 'react'; // Added useContext
+import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'; // Added useNavigate
 import Home from './home.jsx';
 import About from './about.jsx';
 import Gallery from './gallery.jsx';
 import Books from './books.jsx';
 import Support from './support.jsx';
 import Contact from './contact.jsx';
+import Events from './events.jsx';
+import Login from './Login.jsx';
+import AdminDashboard from './AdminDashboard.jsx';
+import Register from './Register.jsx';
+import UserDashboard from './UserDashboard.jsx';
+import AdminLogin from './AdminLogin.jsx';
+import { AuthContext } from '../context/AuthContext.jsx';
 
 export default function Nav() {
-  // State to track if the mobile menu is open or closed
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Function to toggle the menu open/closed
+  const { user, logout } = useContext(AuthContext); 
+  const navigate = useNavigate();
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  // Function to close the menu when a link is clicked
   const closeMenu = () => {
     setIsMenuOpen(false);
+  };
+
+  // ADDED: The logout function
+  const handleLogout = () => {
+    logout();
+    closeMenu();
+    navigate('/login');
   };
 
   return (
@@ -28,14 +42,12 @@ export default function Nav() {
           <h2>Achyuta Ashram</h2>
         </div>
 
-        {/* The Hamburger Icon (Only visible on mobile) */}
         <div className="hamburger" onClick={toggleMenu}>
           <span className="bar"></span>
           <span className="bar"></span>
           <span className="bar"></span>
         </div>
 
-        {/* Links Container: Adds the 'open' class if isMenuOpen is true */}
         <div className={`nav-links ${isMenuOpen ? "open" : ""}`}>
           <NavLink to="/" className={({ isActive }) => isActive ? "hidden-link" : "nav-item"} onClick={closeMenu}>
             Home
@@ -55,6 +67,33 @@ export default function Nav() {
           <NavLink to="/contact" className={({ isActive }) => isActive ? "hidden-link" : "nav-item"} onClick={closeMenu}>
             Contact
           </NavLink>
+          <NavLink to="/events" className={({ isActive }) => isActive ? "hidden-link" : "nav-item"} onClick={closeMenu}>
+            Events
+          </NavLink>
+          
+          {/* UPDATED: Dynamic Auth Links */}
+          {user ? (
+            <>
+              <NavLink 
+                to={user.role === 'admin' ? '/admin/dashboard' : '/my-profile'} 
+                className={({ isActive }) => isActive ? "hidden-link" : "nav-item"} 
+                onClick={closeMenu}
+              >
+                {user.role === 'admin' ? 'Admin Panel' : 'My Profile'}
+              </NavLink>
+              <button 
+                className="nav-item" 
+                onClick={handleLogout} 
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <NavLink to="/login" className={({ isActive }) => isActive ? "hidden-link" : "nav-item"} onClick={closeMenu}>
+              Login / Register
+            </NavLink>
+          )}
         </div>
       </nav>
       
@@ -65,7 +104,12 @@ export default function Nav() {
         <Route path="/book" element={<Books />} />
         <Route path="/donate" element={<Support />} />
         <Route path="/contact" element={<Contact />} />
-        {/* Add more routes as needed */}
+        <Route path="/events" element={<Events />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/my-profile" element={<UserDashboard />} />
+        <Route path="/admin-portal" element={<AdminLogin />} />
       </Routes>
     </>
   );

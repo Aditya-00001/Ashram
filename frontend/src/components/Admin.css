@@ -1,0 +1,203 @@
+/* Admin.css */
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #121212;
+  color: #eaeaea;
+}
+
+/* --- SIDEBAR --- */
+.admin-sidebar {
+  width: 250px;
+  background-color: #1e1e1e;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #333;
+}
+
+.admin-sidebar h2 {
+  color: #e67e22;
+  margin-top: 0;
+  margin-bottom: 40px;
+  font-size: 1.5rem;
+}
+
+.admin-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-grow: 1;
+}
+
+.admin-nav button {
+  background: transparent;
+  border: none;
+  color: #bbbbbb;
+  text-align: left;
+  padding: 12px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.05rem;
+  transition: all 0.2s ease;
+}
+
+.admin-nav button:hover, .admin-nav button.active {
+  background-color: #333;
+  color: #ffffff;
+}
+
+.logout-btn {
+  background-color: #ff4757;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* --- MAIN CONTENT --- */
+.admin-content {
+  flex-grow: 1;
+  padding: 40px;
+  background-color: #121212;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.admin-panel h3 {
+  color: #ffffff;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.add-btn {
+  background-color: #e67e22;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* --- TABLES --- */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.admin-table th, .admin-table td {
+  padding: 15px 20px;
+  text-align: left;
+  border-bottom: 1px solid #333;
+}
+
+.admin-table th {
+  background-color: #242424;
+  color: #e67e22;
+}
+
+.edit-btn, .delete-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.edit-btn { background-color: #3498db; color: white; }
+.delete-btn { background-color: #e74c3c; color: white; }
+
+.status.success {
+  color: #2ecc71;
+  font-weight: bold;
+}
+
+/* --- MESSAGE CARDS --- */
+.message-card {
+  background-color: #1e1e1e;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+  margin-top: 20px;
+}
+
+.message-card h4 { margin: 0 0 5px 0; color: #fff; }
+.msg-date { font-size: 0.85rem; color: #888; margin-bottom: 15px; }
+.reply-btn {
+  background-color: transparent;
+  border: 1px solid #bbbbbb;
+  color: #bbbbbb;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+
+/* --- MOBILE RESPONSIVENESS --- */
+@media (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column; /* Stacks the sidebar on top of the content */
+  }
+
+  /* Adjust Sidebar to sit at the top */
+  .admin-sidebar {
+    width: 100%;
+    padding: 20px;
+    border-right: none;
+    border-bottom: 1px solid #333;
+  }
+
+  .admin-sidebar h2 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  /* Turn the vertical nav into a horizontal row of buttons */
+  .admin-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .admin-nav button {
+    flex: 1;
+    min-width: 120px; /* Ensures buttons don't get too tiny */
+    text-align: center;
+  }
+
+  .logout-btn {
+    margin-top: 15px;
+  }
+
+  /* Adjust the main content area */
+  .admin-content {
+    padding: 20px 15px;
+  }
+
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px; /* Adds breathing room between the title and the Add button */
+  }
+
+  /* Fix the Table Squishing */
+  .admin-table {
+    display: block; /* Changes table behavior to allow scrolling */
+    overflow-x: auto; /* Adds a horizontal scrollbar just for the table */
+    white-space: nowrap; /* Forces text to stay on one line instead of wrapping */
+  }
+}

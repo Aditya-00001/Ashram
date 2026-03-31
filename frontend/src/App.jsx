@@ -6,7 +6,7 @@ import './App.css'
 import Nav from './components/nav.jsx'
 import Footer from './components/footer.jsx'
 import { BrowserRouter } from 'react-router-dom';
-
+import AdminDashboard from './components/AdminDashboard.jsx';
 
 function App() {
   // const [count, setCount] = useState(0)
@@ -17,6 +17,7 @@ function App() {
       <Nav />
       {/* Your main page content will render here via the Routes in Nav */}
       <Footer />
+      {/* <AdminDashboard /> */}
     </BrowserRouter>
     </>
   )

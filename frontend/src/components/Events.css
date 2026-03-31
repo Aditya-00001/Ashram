@@ -1,0 +1,123 @@
+/* Events.css */
+.events-page {
+  padding: 80px 20px;
+  min-height: 100vh;
+  background-color: #1a1a1a;
+  color: #eaeaea;
+}
+
+.events-header {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.events-header h2 {
+  font-size: 2.5rem;
+  color: #e67e22;
+  margin-bottom: 10px;
+}
+
+.events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.event-card {
+  display: flex;
+  background-color: #242424;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.event-card:hover {
+  transform: translateX(5px);
+  border-left: 4px solid #e67e22;
+}
+
+.event-date-box {
+  background-color: #333333;
+  padding: 20px;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid #444;
+}
+
+.event-month {
+  color: #e67e22;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 1.1rem;
+}
+
+.event-day {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.event-details {
+  padding: 25px;
+  flex: 1;
+  text-align: left;
+}
+
+.event-meta {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.event-badge {
+  background-color: #e67e22;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.event-badge.lunar {
+  background-color: #5b8db8; /* A cool moon-like blue for lunar events */
+}
+
+.event-time {
+  color: #aaaaaa;
+  font-size: 0.9rem;
+}
+
+.event-details h3 {
+  color: #ffffff;
+  margin: 0 0 10px 0;
+  font-size: 1.4rem;
+}
+
+.event-details p {
+  color: #bbbbbb;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+  .event-card {
+    flex-direction: column;
+  }
+  .event-date-box {
+    border-right: none;
+    border-bottom: 1px solid #444;
+    padding: 15px;
+    flex-direction: row;
+    gap: 10px;
+  }
+}
