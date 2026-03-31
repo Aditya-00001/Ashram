@@ -108,6 +108,12 @@ html, body {
     max-height: 400px; /* Allows enough room for the links */
     opacity: 1;
     padding: 20px 0;
+    max-height: calc(100vh - 80px); /* Prevents the menu from being taller than the screen (adjust 80px to your actual navbar height) */
+    overflow-y: auto;               /* Turns on vertical scrolling! */
+    padding-bottom: 30px;           /* Adds a little breathing room at the very bottom so the last item isn't squished */
+  }
+  .nav-links.open::-webkit-scrollbar {
+    display: none;
   }
 
   /* Add some spacing to the vertical links */

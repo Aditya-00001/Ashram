@@ -46,8 +46,8 @@ export const updateEvent = async (req, res) => {
     
     // Find the event by ID and update it with the new data in req.body
     const updatedEvent = await Event.findByIdAndUpdate(id, req.body, { 
-      new: true, // Returns the updated document
-      runValidators: true // Ensures the update follows the Schema rules
+      returnDocument: 'after', // <-- New modern syntax
+      runValidators: true 
     });
 
     if (!updatedEvent) {
