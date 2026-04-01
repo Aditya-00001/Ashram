@@ -1,8 +1,12 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Footer.css';
 
 
 export default function Footer() {
+  const navigate = useNavigate();
+  const handleButtonClick = () => {
+  navigate('/donate'); // The path to the specific page
+};
   return (
     <footer className="footer-container">
       <div className="footer-content">
@@ -29,7 +33,9 @@ export default function Footer() {
         <div className="footer-section support">
           <h4>Connect</h4>
           {/* Add social icons here */}
-          <button className="donate-btn">Support Our Seva</button>
+          <button className="donate-btn" onClick={handleButtonClick}>
+            Support Our Seva
+          </button>
         </div>
 
       </div>
