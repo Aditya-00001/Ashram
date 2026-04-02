@@ -47,7 +47,12 @@ export default function Login() {
               />
             </div>
             <div className="input-group">
-              <label htmlFor="password">Password</label>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label htmlFor="password">Password</label>
+                {/* --- ADD THIS LINK --- */}
+                <Link to="/forgot-password" style={{ fontSize: '0.85rem', color: '#e67e22', textDecoration: 'none' }}>Forgot Password?</Link>
+              </div>
               <input 
                 type="password" 
                 id="password" 
@@ -55,11 +60,14 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
               />
+              
             </div>
+
             <button type="submit" className="cta-button submit-btn">Login</button>
             <div style={{ textAlign: 'center', marginTop: '20px', color: '#ccc' }}>
               Don't have an account? <Link to="/register" style={{ color: '#e67e22', textDecoration: 'none' }}>Register here</Link>
             </div>
+            
           </form>
         </div>
       </div>

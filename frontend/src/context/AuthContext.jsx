@@ -11,6 +11,25 @@ export const AuthProvider = ({ children }) => {
       setUser(JSON.parse(storedUser));
     }
   }, []);
+  // --- NEW: Verify Email Function ---
+  const verifyEmail = async (email, code) => {
+    const response = await fetch('http://localhost:5000/api/auth/verify-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // Once verified, the backend sends back the login token. Log them in!
+      setUser(data); 
+      localStorage.setItem('ashramUser', JSON.stringify(data));
+      return { success: true, role: data.role }; 
+    } else {
+      return { success: false, message: data.message };
+    }
+  };
 
   // --- NEW: Registration Function ---
   // Inside AuthContext.jsx
@@ -57,7 +76,7 @@ export const AuthProvider = ({ children }) => {
 
   // DON'T FORGET to add 'register' to this list!
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, register, verifyEmail, logout }}>
       {children}
     </AuthContext.Provider>
   );

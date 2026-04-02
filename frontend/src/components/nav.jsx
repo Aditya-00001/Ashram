@@ -12,6 +12,9 @@ import AdminDashboard from './AdminDashboard.jsx';
 import Register from './Register.jsx';
 import UserDashboard from './UserDashboard.jsx';
 import AdminLogin from './AdminLogin.jsx';
+import VerifyEmail from './VerifyEmail.jsx';
+import ForgotPassword from './ForgotPassword.jsx';
+import ResetPassword from './ResetPassword.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
 
 export default function Nav() {
@@ -110,6 +113,10 @@ export default function Nav() {
         <Route path="/register" element={<Register />} />
         <Route path="/my-profile" element={<UserDashboard />} />
         <Route path="/admin-portal" element={<AdminLogin />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        {/* The :resetToken acts as a dynamic variable that React Router will extract */}
+        <Route path="/reset-password/:resetToken" element={<ResetPassword />} />
       </Routes>
     </>
   );

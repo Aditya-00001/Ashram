@@ -23,13 +23,14 @@ export default function Register() {
     }
 
     // Inside Register.jsx's handleRegister function
-    const result = await register(name, email, password);
         
+    const result = await register(name, email, password);
+    
     if (result.success) {
-        alert("Registration successful! Please log in."); // Simple alert to notify them
-        navigate('/login'); // Send them to the login page
+      // UPDATED: Send them to the verification page and pass their email secretly in the state!
+      navigate('/verify-email', { state: { email: email } }); 
     } else {
-        setError(result.message);
+      setError(result.message);
     }
   };
 
