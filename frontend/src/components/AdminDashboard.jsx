@@ -52,6 +52,10 @@ export default function AdminDashboard() {
     title: '', date: '', startTime: '', endTime: '', type: 'Special Event', description: ''
   });
 
+  // --- NEW: Pagination State ---
+  const [donationPage, setDonationPage] = useState(1);
+  const [totalDonationPages, setTotalDonationPages] = useState(1);
+
   useEffect(() => {
     if (!user || user.role !== 'admin') {
       navigate('/admin-portal');
@@ -69,8 +73,12 @@ export default function AdminDashboard() {
           if (res.ok) setEvents(await res.json());
         } 
         else if (activeTab === 'donations') {
-          const res = await fetch('http://localhost:5000/api/donations', { headers });
-          if (res.ok) setDonations(await res.json());
+          const res = await fetch(`http://localhost:5000/api/donations?page=${donationPage}&limit=10`, { headers });
+          if (res.ok) {
+            const data = await res.json();
+            setDonations(data.donations); // The array of data
+            setTotalDonationPages(data.totalPages); // The math from the backend
+          }
         } 
         else if (activeTab === 'messages') {
           const res = await fetch('http://localhost:5000/api/messages', { headers });
@@ -79,7 +87,7 @@ export default function AdminDashboard() {
       } catch (error) { console.error("Failed to fetch data:", error); }
     };
     fetchData();
-  }, [activeTab, user]);
+  }, [activeTab, user, donationPage]);
 
   const handleFormChange = (e) => {
     setEventFormData({ ...eventFormData, [e.target.name]: e.target.value });
@@ -318,8 +326,38 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
+
+            {/* --- PAGINATION CONTROLS (Safely inside the panel!) --- */}
+            {totalDonationPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '20px' }}>
+                <button 
+                  onClick={() => setDonationPage(prev => Math.max(prev - 1, 1))}
+                  disabled={donationPage === 1}
+                  className="cta-button outline-btn"
+                  style={{ padding: '8px 16px', opacity: donationPage === 1 ? 0.5 : 1, cursor: donationPage === 1 ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}
+                >
+                  Previous
+                </button>
+                
+                <span style={{ color: '#ccc' }}>
+                  Page {donationPage} of {totalDonationPages}
+                </span>
+
+                <button 
+                  onClick={() => setDonationPage(prev => Math.min(prev + 1, totalDonationPages))}
+                  disabled={donationPage === totalDonationPages}
+                  className="cta-button outline-btn"
+                  style={{ padding: '8px 16px', opacity: donationPage === totalDonationPages ? 0.5 : 1, cursor: donationPage === totalDonationPages ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
-        )}
+        )}  
+          
+          
+        
 
         {/* MESSAGES TAB */}
         {activeTab === 'messages' && (

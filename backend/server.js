@@ -2,7 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-
+import rateLimit from 'express-rate-limit';
 // --- ROUTE IMPORTS ---
 import authRoutes from './routes/authRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
@@ -14,6 +14,22 @@ dotenv.config();
 
 // Initialize Express
 const app = express();
+
+// 2. Create the limiters BEFORE your routes
+// General API Limiter: 100 requests per 15 minutes per IP
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
+  message: { message: 'Too many requests from this IP, please try again after 15 minutes.' }
+});
+
+// Strict Auth Limiter: 10 requests per hour for login/register to prevent spam
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, 
+  max: 10, 
+  message: { message: 'Too many authentication attempts, please try again after an hour.' }
+});
+
 
 // --- MIDDLEWARE ---
 // Allows your React frontend (e.g., localhost:5173) to communicate with this API
@@ -31,7 +47,8 @@ mongoose.connect(process.env.MONGO_URI)
 
 // --- API ROUTES ---
 // Mount the imported routers to specific URL paths
-app.use('/api/auth', authRoutes);
+app.use('/api', apiLimiter); // Apply general API rate limiter to all routes under /api
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/donations', donationRoutes);
 app.use('/api/messages', messageRoutes);

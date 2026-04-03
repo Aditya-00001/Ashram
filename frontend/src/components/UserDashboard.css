@@ -32,6 +32,9 @@
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 0; 
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .dashboard-card h3 {
@@ -48,6 +51,10 @@
   font-size: 1.1rem;
   margin: 15px 0;
   color: #cccccc;
+
+  overflow-wrap: anywhere; 
+  word-break: break-all; /* This aggressively chops the email if it touches the edge */
+  white-space: pre-wrap;
 }
 
 .profile-info strong {
@@ -130,8 +137,27 @@
 }
 
 /* --- MOBILE RESPONSIVENESS --- */
+/* --- MOBILE RESPONSIVENESS --- */
 @media (max-width: 768px) {
   .dashboard-content {
     grid-template-columns: 1fr; /* Stacks the cards on mobile */
+  }
+  
+  .dashboard-card {
+    padding: 20px; /* Reduces the thick 30px padding to give text more room */
+    max-width: 100%; /* Ensures the card never grows wider than the screen */
+    box-sizing: border-box;
+    
+  }
+
+  .dashboard-header h2 {
+    font-size: 2rem; /* Scales the big header down slightly */
+  }
+  
+  .profile-info p {
+    font-size: 1rem; /* Scales profile text down slightly for narrow screens */
+    overflow-wrap: break-word; 
+    word-break: break-word;
+    white-space: normal;
   }
 }
