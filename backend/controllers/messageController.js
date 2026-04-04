@@ -26,11 +26,24 @@ export const sendMessage = async (req, res) => {
 // @access  Private/Admin
 export const getMessages = async (req, res) => {
   try {
-    // Sort by newest first
-    const messages = await Message.find().sort({ createdAt: -1 });
-    res.status(200).json(messages);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const total = await Message.countDocuments();
+    const messages = await Message.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.status(200).json({
+      messages,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalMessages: total
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch messages', error: error.message });
+    res.status(500).json({ message: 'Failed to fetch messages' });
   }
 };
 

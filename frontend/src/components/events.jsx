@@ -15,7 +15,7 @@ export default function Events() {
         if (!response.ok) throw new Error('Failed to fetch events');
         
         const data = await response.json();
-        setEvents(data); // Save the database events into React state
+        setEvents(data.events); // Save the database events into React state
         setIsLoading(false);
       } catch (err) {
         setError(err.message);
@@ -59,6 +59,9 @@ export default function Events() {
                     <h3>{event.title}</h3>
                     <p>{event.description}</p>
                   </div>
+                  {event.imageUrl && (
+                      <img src={event.imageUrl} alt={event.title} className="event-image" />
+                    )}
                 </div>
               ))
             )}

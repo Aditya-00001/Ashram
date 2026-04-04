@@ -49,12 +49,18 @@ export default function AdminDashboard() {
   
   // UPDATED STATE: Splitting time into startTime and endTime for the UI
   const [eventFormData, setEventFormData] = useState({
-    title: '', date: '', startTime: '', endTime: '', type: 'Special Event', description: ''
+    title: '', date: '', startTime: '', endTime: '', type: 'Special Event', description: '', image: null
   });
 
   // --- NEW: Pagination State ---
   const [donationPage, setDonationPage] = useState(1);
   const [totalDonationPages, setTotalDonationPages] = useState(1);
+
+  const [eventPage, setEventPage] = useState(1);
+  const [totalEventPages, setTotalEventPages] = useState(1);
+  
+  const [messagePage, setMessagePage] = useState(1);
+  const [totalMessagePages, setTotalMessagePages] = useState(1);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -69,28 +75,43 @@ export default function AdminDashboard() {
       const headers = { 'Authorization': `Bearer ${user.token}` };
       try {
         if (activeTab === 'events') {
-          const res = await fetch('http://localhost:5000/api/events');
-          if (res.ok) setEvents(await res.json());
+          const res = await fetch(`http://localhost:5000/api/events?page=${eventPage}&limit=10`);
+          // --- FIX: Extract the array and the page count ---
+          if (res.ok) {
+            const data = await res.json();
+            setEvents(data.events); 
+            setTotalEventPages(data.totalPages);
+          }
         } 
         else if (activeTab === 'donations') {
           const res = await fetch(`http://localhost:5000/api/donations?page=${donationPage}&limit=10`, { headers });
           if (res.ok) {
             const data = await res.json();
-            setDonations(data.donations); // The array of data
-            setTotalDonationPages(data.totalPages); // The math from the backend
+            setDonations(data.donations); 
+            setTotalDonationPages(data.totalPages); 
           }
         } 
         else if (activeTab === 'messages') {
-          const res = await fetch('http://localhost:5000/api/messages', { headers });
-          if (res.ok) setMessages(await res.json());
+          const res = await fetch(`http://localhost:5000/api/messages?page=${messagePage}&limit=10`, { headers });
+          // --- FIX: Extract the array and the page count ---
+          if (res.ok) {
+            const data = await res.json();
+            setMessages(data.messages);
+            setTotalMessagePages(data.totalPages);
+          }
         }
       } catch (error) { console.error("Failed to fetch data:", error); }
     };
     fetchData();
-  }, [activeTab, user, donationPage]);
+  }, [activeTab, user, donationPage, eventPage, messagePage]);
 
   const handleFormChange = (e) => {
     setEventFormData({ ...eventFormData, [e.target.name]: e.target.value });
+  };
+
+  // 2. Add this NEW function to catch the image file
+  const handleFileChange = (e) => {
+    setEventFormData({ ...eventFormData, image: e.target.files[0] });
   };
 
   const openAddForm = () => {
@@ -138,14 +159,19 @@ export default function AdminDashboard() {
       formattedTime += ` - ${parseTime24to12(eventFormData.endTime)}`;
     }
 
-    // 3. Create the payload
-    const payload = {
-      title: eventFormData.title,
-      type: eventFormData.type,
-      description: eventFormData.description,
-      date: formattedDate,
-      time: formattedTime
-    };
+    // 3. Create a FormData object instead of standard JSON
+    const formData = new FormData();
+    formData.append('title', eventFormData.title);
+    formData.append('type', eventFormData.type);
+    formData.append('description', eventFormData.description);
+    formData.append('date', formattedDate);
+    formData.append('time', formattedTime);
+    
+    // Only append the image if the user actually selected one!
+    if (eventFormData.image) {
+      formData.append('image', eventFormData.image);
+    }
+    
 
     const url = editingEventId 
       ? `http://localhost:5000/api/events/${editingEventId}` 
@@ -155,8 +181,8 @@ export default function AdminDashboard() {
     try {
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
-        body: JSON.stringify(payload)
+        headers: { 'Authorization': `Bearer ${user.token}` }, 
+        body: formData // Send the formData object!
       });
 
       if (res.ok) {
@@ -255,6 +281,21 @@ export default function AdminDashboard() {
                     <input type="time" name="endTime" value={eventFormData.endTime} onChange={handleFormChange} required />
                   </div>
                 </div>
+                {/* --- NEW: Image Upload Field --- */}
+                <div className="input-group">
+                  <label>Event Banner Image (Optional)</label>
+                  <input 
+                    type="file" 
+                    name="image" 
+                    accept="image/*" 
+                    onChange={handleFileChange} 
+                    style={{ padding: '10px 0' }}
+                  />
+                  {/* Quick visual feedback if they are editing an event that already has an image */}
+                  {editingEventId && !eventFormData.image && (
+                    <small style={{ color: '#888' }}>Leave blank to keep the current image.</small>
+                  )}
+                </div>
 
                 <div className="input-group">
                   <label>Description</label>
@@ -292,6 +333,14 @@ export default function AdminDashboard() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+              {/* EVENTS PAGINATION */}
+            {totalEventPages > 1 && !showEventForm && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '20px' }}>
+                <button onClick={() => setEventPage(prev => Math.max(prev - 1, 1))} disabled={eventPage === 1} className="cta-button outline-btn" style={{ padding: '8px 16px', opacity: eventPage === 1 ? 0.5 : 1, cursor: eventPage === 1 ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}>Previous</button>
+                <span style={{ color: '#ccc' }}>Page {eventPage} of {totalEventPages}</span>
+                <button onClick={() => setEventPage(prev => Math.min(prev + 1, totalEventPages))} disabled={eventPage === totalEventPages} className="cta-button outline-btn" style={{ padding: '8px 16px', opacity: eventPage === totalEventPages ? 0.5 : 1, cursor: eventPage === totalEventPages ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}>Next</button>
               </div>
             )}
           </div>
@@ -378,6 +427,14 @@ export default function AdminDashboard() {
                 )}
               </div>
             ))}
+            {/* MESSAGES PAGINATION */}
+            {totalMessagePages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '20px' }}>
+                <button onClick={() => setMessagePage(prev => Math.max(prev - 1, 1))} disabled={messagePage === 1} className="cta-button outline-btn" style={{ padding: '8px 16px', opacity: messagePage === 1 ? 0.5 : 1, cursor: messagePage === 1 ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}>Previous</button>
+                <span style={{ color: '#ccc' }}>Page {messagePage} of {totalMessagePages}</span>
+                <button onClick={() => setMessagePage(prev => Math.min(prev + 1, totalMessagePages))} disabled={messagePage === totalMessagePages} className="cta-button outline-btn" style={{ padding: '8px 16px', opacity: messagePage === totalMessagePages ? 0.5 : 1, cursor: messagePage === totalMessagePages ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}>Next</button>
+              </div>
+            )}
           </div>
         )}
 

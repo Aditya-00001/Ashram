@@ -5,21 +5,32 @@ import Event from '../models/Event.js';
 // @access  Public
 export const getEvents = async (req, res) => {
   try {
-    // Fetches all events and sorts them by creation date (newest first)
-    const events = await Event.find().sort({ createdAt: -1 });
-    res.status(200).json(events);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const total = await Event.countDocuments();
+    const events = await Event.find()
+      .sort({ createdAt: -1 }) // Or however you prefer to sort them
+      .skip(skip)
+      .limit(limit);
+    console.log('Fetched Events:', events); // Debugging log
+    res.status(200).json({
+      events,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalEvents: total
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server Error: Could not fetch events', error: error.message });
+    res.status(500).json({ message: 'Server Error' });
   }
 };
-
 // @desc    Create a new event
 // @route   POST /api/events
 // @access  Private/Admin (We will add auth later)
 export const createEvent = async (req, res) => {
   try {
     const { title, date, time, type, description } = req.body;
-
     // Create a new event instance using the Mongoose model
     const newEvent = new Event({
       title,
@@ -28,7 +39,9 @@ export const createEvent = async (req, res) => {
       type,
       description
     });
-
+    if (req.file) {
+      newEvent.imageUrl = req.file.path; 
+    }
     // Save it to MongoDB
     const savedEvent = await newEvent.save();
     res.status(201).json(savedEvent);
@@ -42,11 +55,15 @@ export const createEvent = async (req, res) => {
 // @access  Private/Admin
 export const updateEvent = async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    // Find the event by ID and update it with the new data in req.body
-    const updatedEvent = await Event.findByIdAndUpdate(id, req.body, { 
-      returnDocument: 'after', // <-- New modern syntax
+    const eventData = { ...req.body };
+
+    // --- NEW: Update the image URL only if the admin uploaded a new one ---
+    if (req.file) {
+      eventData.imageUrl = req.file.path;
+    }
+
+    const updatedEvent = await Event.findByIdAndUpdate(req.params.id, eventData, { 
+      returnDocument: 'after',
       runValidators: true 
     });
 

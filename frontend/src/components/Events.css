@@ -108,6 +108,12 @@
   line-height: 1.5;
 }
 
+.event-image {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+}
+
 /* Mobile responsiveness */
 @media (max-width: 600px) {
   .event-card {

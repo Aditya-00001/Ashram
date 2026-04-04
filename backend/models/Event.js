@@ -9,7 +9,8 @@ const eventSchema = new mongoose.Schema({
     required: true,
     enum: ['Special Event', 'Lunar Day', 'Karma Yoga', 'Other']
   },
-  description: { type: String, required: true }
+  description: { type: String, required: true },
+  imageUrl: { type: String, default: null }
 }, { timestamps: true });
 
 export default mongoose.model('Event', eventSchema);
