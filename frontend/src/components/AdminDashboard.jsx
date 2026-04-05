@@ -67,6 +67,11 @@ export default function AdminDashboard() {
   const [galleryPage, setGalleryPage] = useState(1);
   const [totalGalleryPages, setTotalGalleryPages] = useState(1);
   
+  // --- NEW: Newsletter State ---
+  const [newsletterData, setNewsletterData] = useState({ subject: '', message: '' });
+  const [isSendingNewsletter, setIsSendingNewsletter] = useState(false);
+  const [newsletterStatus, setNewsletterStatus] = useState('');
+
   const [galleryFormData, setGalleryFormData] = useState({ 
     image: null, type: 'Archive', eventId: '', caption: '' 
   });
@@ -289,6 +294,41 @@ export default function AdminDashboard() {
 
   if (!user || user.role !== 'admin') return null;
 
+ 
+  // --- NEWSLETTER HANDLER ---
+  const handleSendNewsletter = async (e) => {
+    e.preventDefault();
+    if (!window.confirm("Are you sure you want to broadcast this to ALL verified users?")) return;
+
+    setIsSendingNewsletter(true);
+    setNewsletterStatus('');
+
+    try {
+      const res = await fetch('http://localhost:5000/api/newsletter/send', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}` 
+        },
+        body: JSON.stringify(newsletterData)
+      });
+
+      const data = await res.json();
+      
+      if (res.ok) {
+        setNewsletterStatus({ type: 'success', text: data.message });
+        setNewsletterData({ subject: '', message: '' }); // Clear the form
+      } else {
+        setNewsletterStatus({ type: 'error', text: data.message });
+      }
+    } catch (err) {
+      setNewsletterStatus({ type: 'error', text: 'Failed to connect to the server.' });
+    }
+    
+    setIsSendingNewsletter(false);
+  };
+ 
+ 
   return (
     <div className="admin-layout">
       
@@ -299,6 +339,7 @@ export default function AdminDashboard() {
           <button className={activeTab === 'donations' ? 'active' : ''} onClick={() => setActiveTab('donations')}>₹ Donations</button>
           <button className={activeTab === 'messages' ? 'active' : ''} onClick={() => setActiveTab('messages')}>✉️ Messages</button>
           <button className={activeTab === 'gallery' ? 'active' : ''} onClick={() => setActiveTab('gallery')}>🖼️ Gallery</button>
+          <button className={activeTab === 'newsletter' ? 'active' : ''} onClick={() => setActiveTab('newsletter')}>📢 Broadcast</button>
         </nav>
         <button className="logout-btn" onClick={handleLogout}>Logout</button>
       </aside>
@@ -576,6 +617,63 @@ export default function AdminDashboard() {
               </div>
             )}
 
+          </div>
+        )}
+
+
+        {/* NEWSLETTER TAB */}
+        {activeTab === 'newsletter' && (
+          <div className="admin-panel">
+            <h3>Broadcast Newsletter</h3>
+            <p style={{ color: '#ccc', marginBottom: '20px' }}>
+              Send an email directly to every verified user in the Ashram community.
+            </p>
+
+            {newsletterStatus && (
+              <div style={{ 
+                padding: '15px', 
+                marginBottom: '20px', 
+                borderRadius: '8px', 
+                backgroundColor: newsletterStatus.type === 'success' ? 'rgba(46, 204, 113, 0.1)' : 'rgba(255, 71, 87, 0.1)',
+                color: newsletterStatus.type === 'success' ? '#2ecc71' : '#ff4757',
+                border: `1px solid ${newsletterStatus.type === 'success' ? '#2ecc71' : '#ff4757'}`
+              }}>
+                {newsletterStatus.text}
+              </div>
+            )}
+
+            <form className="admin-form" onSubmit={handleSendNewsletter}>
+              <div className="input-group">
+                <label>Email Subject</label>
+                <input 
+                  type="text" 
+                  value={newsletterData.subject} 
+                  onChange={(e) => setNewsletterData({...newsletterData, subject: e.target.value})} 
+                  required 
+                  placeholder="e.g., Schedule for upcoming Maha Shivaratri"
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Message Body</label>
+                <textarea 
+                  rows="8" 
+                  value={newsletterData.message} 
+                  onChange={(e) => setNewsletterData({...newsletterData, message: e.target.value})} 
+                  required 
+                  placeholder="Type your message here. The system will automatically add 'Hari Om [Name],' at the top."
+                ></textarea>
+              </div>
+
+              <button 
+                type="submit" 
+                className="cta-button submit-btn" 
+                disabled={isSendingNewsletter}
+                style={{ opacity: isSendingNewsletter ? 0.7 : 1 }}
+              >
+                {isSendingNewsletter ? 'Broadcasting... Please wait...' : 'Send to All Users'}
+              </button>
+            </form>
           </div>
         )}
       </main>
