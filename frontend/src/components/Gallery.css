@@ -1,109 +1,115 @@
-.gallery-page {
-  padding: 40px 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-  text-align: center;
-  overflow-x: hidden;
-}
+/* Gallery.css Additions */
 
-h2 {
-  color: #e67e22; /* Matching the saffron accent from your footer */
-  margin-bottom: 20px;
-}
-
-/* Featured Grid Styles */
-/* Featured Grid Styles */
-.featured-grid {
-  display: grid;
-  /* Switched back to a standard minmax for desktop/tablet */
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-  gap: 20px;
-  margin-bottom: 40px;
-}
-
-/* ADD THIS: Mobile Responsiveness for the Grid */
-@media (max-width: 768px) {
-  .featured-grid {
-    /* This forces the grid to form a single column on mobile screens */
-    grid-template-columns: 1fr; 
-  }
-}
-
-/* --- UPDATE THESE SECTIONS IN Gallery.css --- */
-
-/* --- FEATURED CARDS --- */
-.featured-card {
-  background: #333333;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  /* ADDED THIS: Stops the card from stretching too wide on mobile */
-  max-width: 450px; 
-  margin: 0 auto; /* Centers the card */
-  width: 100%;
-}
-
-.featured-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
-}
-
-.featured-card img {
-  width: 100%;
-  height: auto; /* Lets aspect-ratio do the work */
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  display: block;
-}
-
-.featured-card h3 {
-  padding: 15px;
-  margin: 0;
-  font-size: 1.2rem;
-  color: #eaeaea; 
-}
-
-.divider {
-  border: 0;
-  height: 1px;
-  background: #ccc;
-  margin: 40px 0;
-}
-
-/* Carousel Styles */
-.mySwiper {
-  width: 100%;
-  padding-bottom: 20px; 
-}
-
-/* Styles the navigation arrows */
-.swiper-button-next,
-.swiper-button-prev {
-  color: #e67e22 !important; /* Changes the blue to your Saffron accent color */
-  background-color: rgba(36, 36, 36, 0.8); /* Adds a dark, semi-transparent background box */
-  padding: 30px 20px; /* Makes the clickable area much larger */
-  border-radius: 8px;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.swiper-button-next:hover,
-.swiper-button-prev:hover {
-  background-color: #1a1a1a; /* Darkens on hover */
-  transform: scale(1.05); /* Slight pop effect */
-}
-
-/* Adjusts the actual arrow icon size inside the button */
-.swiper-button-next::after,
-.swiper-button-prev::after {
-  font-size: 1.5rem !important;
+.gallery-filters .filter-btn {
+  background: transparent;
+  border: 2px solid #e67e22;
+  color: #e67e22;
+  padding: 8px 20px;
+  border-radius: 30px;
+  cursor: pointer;
   font-weight: bold;
+  transition: all 0.3s ease;
 }
 
-.carousel-image {
+.gallery-filters .filter-btn:hover,
+.gallery-filters .filter-btn.active {
+  background: #e67e22;
+  color: #1a1a1a;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.gallery-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  aspect-ratio: 4/3;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.gallery-card img {
   width: 100%;
-  height: auto; /* Removes the rigid height */
-  aspect-ratio: 16 / 9; /* A wider cinematic shape looks great for carousels */
+  height: 100%;
   object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.gallery-card:hover img {
+  transform: scale(1.05);
+}
+
+.gallery-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.9));
+  padding: 20px;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.gallery-card:hover .gallery-overlay {
+  transform: translateY(0);
+}
+
+.gallery-tag {
+  background: #e67e22;
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.gallery-caption {
+  color: #fff;
+  margin: 10px 0 0 0;
+  font-size: 0.95rem;
+}
+
+/* LIGHTBOX STYLES */
+.lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  cursor: zoom-out;
+}
+
+.lightbox img {
+  max-width: 90%;
+  max-height: 80vh;
   border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.close-lightbox {
+  position: absolute;
+  top: 20px;
+  right: 40px;
+  font-size: 40px;
+  color: white;
+  cursor: pointer;
+}
+
+.lightbox-caption {
+  color: #fff;
+  margin-top: 20px;
+  font-size: 1.2rem;
+  text-align: center;
 }

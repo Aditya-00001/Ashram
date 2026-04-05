@@ -62,6 +62,16 @@ export default function AdminDashboard() {
   const [messagePage, setMessagePage] = useState(1);
   const [totalMessagePages, setTotalMessagePages] = useState(1);
 
+  // --- NEW: Gallery State ---
+  const [galleryImages, setGalleryImages] = useState([]);
+  const [galleryPage, setGalleryPage] = useState(1);
+  const [totalGalleryPages, setTotalGalleryPages] = useState(1);
+  
+  const [galleryFormData, setGalleryFormData] = useState({ 
+    image: null, type: 'Archive', eventId: '', caption: '' 
+  });
+  const [isUploading, setIsUploading] = useState(false);
+
   useEffect(() => {
     if (!user || user.role !== 'admin') {
       navigate('/admin-portal');
@@ -100,11 +110,18 @@ export default function AdminDashboard() {
             setTotalMessagePages(data.totalPages);
           }
         }
+        else if (activeTab === 'gallery') {
+          const res = await fetch(`http://localhost:5000/api/gallery?page=${galleryPage}&limit=12`, { headers });
+          if (res.ok) {
+            const data = await res.json();
+            setGalleryImages(data.images);
+            setTotalGalleryPages(data.totalPages);
+          }
+        }
       } catch (error) { console.error("Failed to fetch data:", error); }
     };
     fetchData();
-  }, [activeTab, user, donationPage, eventPage, messagePage]);
-
+  }, [activeTab, user, donationPage, eventPage, messagePage, galleryPage]);
   const handleFormChange = (e) => {
     setEventFormData({ ...eventFormData, [e.target.name]: e.target.value });
   };
@@ -222,6 +239,54 @@ export default function AdminDashboard() {
     navigate('/admin-portal');
   };
 
+  // --- GALLERY HANDLERS ---
+  const handleGalleryFileChange = (e) => {
+    setGalleryFormData({ ...galleryFormData, image: e.target.files[0] });
+  };
+
+  const handleGalleryUpload = async (e) => {
+    e.preventDefault();
+    if (!galleryFormData.image) return alert("Please select an image first!");
+    
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('image', galleryFormData.image);
+    formData.append('type', galleryFormData.type);
+    formData.append('caption', galleryFormData.caption);
+    if (galleryFormData.type === 'Event' && galleryFormData.eventId) {
+      formData.append('eventId', galleryFormData.eventId);
+    }
+
+    try {
+      const res = await fetch('http://localhost:5000/api/gallery', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${user.token}` }, // NO Content-Type here!
+        body: formData
+      });
+
+      if (res.ok) {
+        const newImg = await res.json();
+        setGalleryImages([newImg, ...galleryImages]); // Add to UI instantly
+        setGalleryFormData({ image: null, type: 'Archive', eventId: '', caption: '' }); // Reset form
+        document.getElementById('galleryFileInput').value = ''; // Clear file input UI
+      }
+    } catch (err) {
+      console.error("Upload failed", err);
+    }
+    setIsUploading(false);
+  };
+
+  const handleDeleteGalleryImage = async (id) => {
+    if (window.confirm("Delete this image permanently from the database and Cloudinary?")) {
+      const res = await fetch(`http://localhost:5000/api/gallery/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      });
+      if (res.ok) setGalleryImages(galleryImages.filter(img => img._id !== id));
+    }
+  };
+
+
   if (!user || user.role !== 'admin') return null;
 
   return (
@@ -233,6 +298,7 @@ export default function AdminDashboard() {
           <button className={activeTab === 'events' ? 'active' : ''} onClick={() => { setActiveTab('events'); setShowEventForm(false); }}>📅 Manage Events</button>
           <button className={activeTab === 'donations' ? 'active' : ''} onClick={() => setActiveTab('donations')}>₹ Donations</button>
           <button className={activeTab === 'messages' ? 'active' : ''} onClick={() => setActiveTab('messages')}>✉️ Messages</button>
+          <button className={activeTab === 'gallery' ? 'active' : ''} onClick={() => setActiveTab('gallery')}>🖼️ Gallery</button>
         </nav>
         <button className="logout-btn" onClick={handleLogout}>Logout</button>
       </aside>
@@ -438,6 +504,80 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* GALLERY TAB */}
+        {activeTab === 'gallery' && (
+          <div className="admin-panel">
+            <h3>Manage Ashram Gallery</h3>
+            
+            {/* UPLOAD FORM */}
+            <form className="admin-form" onSubmit={handleGalleryUpload} style={{ marginBottom: '30px', padding: '20px', backgroundColor: '#2a2a2a', borderRadius: '8px' }}>
+              <div className="form-row">
+                <div className="input-group">
+                  <label>Select Image</label>
+                  <input type="file" id="galleryFileInput" accept="image/*" onChange={handleGalleryFileChange} required />
+                </div>
+                <div className="input-group">
+                  <label>Image Type</label>
+                  <select value={galleryFormData.type} onChange={(e) => setGalleryFormData({...galleryFormData, type: e.target.value})}>
+                    <option value="Archive">General Archive (Ashram, Daily Life)</option>
+                    <option value="Event">Specific Event Album</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Only show Event dropdown if they select 'Event' type */}
+              {galleryFormData.type === 'Event' && (
+                <div className="input-group">
+                  <label>Link to Event</label>
+                  <select value={galleryFormData.eventId} onChange={(e) => setGalleryFormData({...galleryFormData, eventId: e.target.value})} required>
+                    <option value="">-- Select an Event --</option>
+                    {events.map(ev => (
+                      <option key={ev._id} value={ev._id}>{ev.title} ({ev.date})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="input-group">
+                <label>Caption (Optional)</label>
+                <input type="text" value={galleryFormData.caption} onChange={(e) => setGalleryFormData({...galleryFormData, caption: e.target.value})} placeholder="e.g., Morning Aarti by the river" />
+              </div>
+
+              <button type="submit" className="cta-button submit-btn" disabled={isUploading}>
+                {isUploading ? 'Uploading to Cloudinary...' : 'Upload Image'}
+              </button>
+            </form>
+
+            {/* IMAGE GRID */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
+              {galleryImages.length === 0 ? <p style={{ color: '#ccc' }}>No images in the gallery yet.</p> : null}
+              {galleryImages.map(img => (
+                <div key={img._id} style={{ backgroundColor: '#242424', borderRadius: '8px', overflow: 'hidden', border: '1px solid #333' }}>
+                  <img src={img.imageUrl} alt={img.caption} style={{ width: '100%', height: '150px', objectFit: 'cover' }} />
+                  <div style={{ padding: '10px' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#e67e22', display: 'block', marginBottom: '5px' }}>
+                      {img.type} {img.eventId && `• ${img.eventId.title}`}
+                    </span>
+                    <p style={{ fontSize: '0.9rem', color: '#ccc', margin: '0 0 10px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {img.caption || 'No caption'}
+                    </p>
+                    <button onClick={() => handleDeleteGalleryImage(img._id)} style={{ width: '100%', padding: '5px', backgroundColor: 'transparent', border: '1px solid #ff4757', color: '#ff4757', borderRadius: '4px', cursor: 'pointer' }}>Delete</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* GALLERY PAGINATION */}
+            {totalGalleryPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '30px' }}>
+                <button onClick={() => setGalleryPage(prev => Math.max(prev - 1, 1))} disabled={galleryPage === 1} className="cta-button outline-btn" style={{ padding: '8px 16px', opacity: galleryPage === 1 ? 0.5 : 1, cursor: galleryPage === 1 ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}>Previous</button>
+                <span style={{ color: '#ccc' }}>Page {galleryPage} of {totalGalleryPages}</span>
+                <button onClick={() => setGalleryPage(prev => Math.min(prev + 1, totalGalleryPages))} disabled={galleryPage === totalGalleryPages} className="cta-button outline-btn" style={{ padding: '8px 16px', opacity: galleryPage === totalGalleryPages ? 0.5 : 1, cursor: galleryPage === totalGalleryPages ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}>Next</button>
+              </div>
+            )}
+
+          </div>
+        )}
       </main>
     </div>
   );

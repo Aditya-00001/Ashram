@@ -109,9 +109,11 @@
 }
 
 .event-image {
-  width: 150px;
-  height: 150px;
-  object-fit: cover;
+  width: 100%;
+  height: 200px; /* Or whatever height looks best to you */
+  object-fit: cover; /* This prevents the image from stretching/squishing! */
+  border-radius: 8px;
+  margin-top: 5px;
 }
 
 /* Mobile responsiveness */

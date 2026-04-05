@@ -2,29 +2,46 @@ import React, { useState, useEffect } from 'react';
 import './Events.css';
 
 export default function Events() {
-  // 1. Set up state for the events, loading status, and errors
   const [events, setEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // --- NEW: Pagination State ---
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  // 2. Use useEffect to fetch data when the component loads
   useEffect(() => {
     const fetchEvents = async () => {
+      // If it's page 1, use the main loader. Otherwise, use the small button loader.
+      if (page === 1) setIsLoading(true);
+      else setIsFetchingMore(true);
+
       try {
-        const response = await fetch('http://localhost:5000/api/events');
+        // --- UPDATED: Fetch with page parameters ---
+        const response = await fetch(`http://localhost:5000/api/events?page=${page}&limit=10`);
         if (!response.ok) throw new Error('Failed to fetch events');
         
         const data = await response.json();
-        setEvents(data.events); // Save the database events into React state
-        setIsLoading(false);
+        
+        // --- UPDATED: Append new events to the bottom if page > 1 ---
+        if (page === 1) {
+          setEvents(data.events);
+        } else {
+          setEvents(prev => [...prev, ...data.events]);
+        }
+        
+        setTotalPages(data.totalPages);
       } catch (err) {
         setError(err.message);
-        setIsLoading(false);
       }
+      
+      setIsLoading(false);
+      setIsFetchingMore(false);
     };
 
     fetchEvents();
-  }, []); // The empty array means this runs exactly once when the page loads
+  }, [page]); // Re-run whenever the 'page' changes!
 
   return (
     <div className="events-page">
@@ -34,18 +51,16 @@ export default function Events() {
           <p>Join us in our daily rhythms and special lunar observances.</p>
         </div>
 
-        {/* 3. Handle Loading and Error states gracefully */}
         {isLoading && <p style={{ textAlign: 'center', color: '#e67e22' }}>Loading events...</p>}
         {error && <p style={{ textAlign: 'center', color: '#ff4757' }}>{error}</p>}
 
-        {/* 4. Render the real events! */}
         {!isLoading && !error && (
           <div className="events-list">
             {events.length === 0 ? (
               <p style={{ textAlign: 'center', color: '#ccc' }}>No upcoming events scheduled at the moment.</p>
             ) : (
               events.map((event) => (
-                <div key={event._id} className="event-card"> {/* MongoDB uses _id instead of id */}
+                <div key={event._id} className="event-card"> 
                   <div className="event-date-box">
                     <span className="event-month">{event.date.split(' ')[0]}</span>
                     <span className="event-day">{event.date.split(' ')[1]?.replace(',', '')}</span>
@@ -67,6 +82,21 @@ export default function Events() {
             )}
           </div>
         )}
+
+        {/* --- NEW: Load More Button --- */}
+        {page < totalPages && !isLoading && !error && (
+          <div style={{ textAlign: 'center', marginTop: '40px', paddingBottom: '40px' }}>
+            <button 
+              className="cta-button" 
+              onClick={() => setPage(prev => prev + 1)}
+              disabled={isFetchingMore}
+              style={{ opacity: isFetchingMore ? 0.7 : 1 }}
+            >
+              {isFetchingMore ? 'Loading...' : 'Load More Events'}
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   );

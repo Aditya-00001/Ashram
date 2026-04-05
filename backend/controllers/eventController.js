@@ -14,7 +14,7 @@ export const getEvents = async (req, res) => {
       .sort({ createdAt: -1 }) // Or however you prefer to sort them
       .skip(skip)
       .limit(limit);
-    console.log('Fetched Events:', events); // Debugging log
+    // console.log('Fetched Events:', events); // Debugging log
     res.status(200).json({
       events,
       currentPage: page,
