@@ -4,23 +4,32 @@ import { v2 as cloudinary } from 'cloudinary'; // We need this to delete images
 // @desc    Upload a new image to the gallery
 // @route   POST /api/gallery
 // @access  Private/Admin
-export const uploadImage = async (req, res) => {
+// @desc    Upload MULTIPLE images to the gallery
+export const uploadImages = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: 'No image provided' });
+    // Check for multiple files
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'No images provided' });
+    }
 
     const { type, eventId, caption } = req.body;
+    const uploadedImages = [];
 
-    const newImage = await Gallery.create({
-      imageUrl: req.file.path,
-      cloudinaryId: req.file.filename, // Multer-Cloudinary gives us this ID automatically
-      type: type,
-      eventId: type === 'Event' ? eventId : undefined,
-      caption: caption || ''
-    });
+    // Loop through every file Multer processed
+    for (const file of req.files) {
+      const newImage = await Gallery.create({
+        imageUrl: file.path,
+        cloudinaryId: file.filename,
+        type: type,
+        eventId: type === 'Event' ? eventId : undefined,
+        caption: caption || ''
+      });
+      uploadedImages.push(newImage);
+    }
 
-    res.status(201).json(newImage);
+    res.status(201).json(uploadedImages);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to upload image', error: error.message });
+    res.status(500).json({ message: 'Failed to upload images', error: error.message });
   }
 };
 

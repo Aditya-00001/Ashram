@@ -3,7 +3,8 @@ import {
   getMyDonations, 
   getDonations, 
   createRazorpayOrder, 
-  verifyRazorpayPayment 
+  verifyRazorpayPayment,
+  razorpayWebhook 
 } from '../controllers/donationController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -16,5 +17,8 @@ router.route('/verify-payment').post(protect, verifyRazorpayPayment);
 // Data Retrieval
 router.route('/my-donations').get(protect, getMyDonations);
 router.route('/').get(protect, admin, getDonations);
+
+// 2. Add the completely public Webhook Route
+router.post('/webhook', razorpayWebhook);
 
 export default router;

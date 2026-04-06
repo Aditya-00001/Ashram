@@ -138,3 +138,61 @@ export const getDonations = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch donations', error: error.message });
   }
 };
+
+
+// @desc    Handle Razorpay Webhooks (Asynchronous updates)
+// @route   POST /api/donations/webhook
+// @access  Public (But secured via crypto signature)
+export const razorpayWebhook = async (req, res) => {
+  try {
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    
+    // 1. Generate the expected signature using our secret and the raw request body
+    const shasum = crypto.createHmac('sha256', webhookSecret);
+    shasum.update(JSON.stringify(req.body));
+    const expectedSignature = shasum.digest('hex');
+
+    // 2. Compare it to the signature Razorpay sent in the headers
+    const razorpaySignature = req.headers['x-razorpay-signature'];
+
+    if (expectedSignature === razorpaySignature) {
+      // ✅ Signature is Valid! We can trust this data.
+      
+      const event = req.body.event;
+      const paymentEntity = req.body.payload.payment.entity;
+      
+      // Razorpay attaches the order_id to the payment entity
+      const razorpayOrderId = paymentEntity.order_id; 
+
+      // 3. Update the Database based on the event type
+      if (event === 'payment.captured') {
+        // Payment was successful! Find the matching donation and update it.
+        await Donation.findOneAndUpdate(
+          { razorpayOrderId: razorpayOrderId }, 
+          { status: 'Successful', paymentId: paymentEntity.id }
+        );
+        console.log(`Webhook: Payment captured for Order ${razorpayOrderId}`);
+        
+      } else if (event === 'payment.failed') {
+        // Payment failed
+        await Donation.findOneAndUpdate(
+          { razorpayOrderId: razorpayOrderId }, 
+          { status: 'Failed' }
+        );
+        console.log(`Webhook: Payment failed for Order ${razorpayOrderId}`);
+      }
+
+      // 4. Always return a 200 OK so Razorpay knows we received it
+      return res.status(200).json({ status: 'ok' });
+
+    } else {
+      // ❌ Signature is Invalid! Someone is trying to hack the endpoint.
+      console.warn("Webhook signature mismatch!");
+      return res.status(400).json({ status: 'invalid signature' });
+    }
+
+  } catch (error) {
+    console.error('Webhook Processing Error:', error);
+    return res.status(500).json({ message: 'Server error during webhook' });
+  }
+};

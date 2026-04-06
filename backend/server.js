@@ -10,6 +10,7 @@ import donationRoutes from './routes/donationRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import galleryRoutes from './routes/galleryRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -56,6 +57,7 @@ app.use('/api/donations', donationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/users', userRoutes);
 
 // --- BASE ROUTE (Health Check) ---
 app.get('/', (req, res) => {

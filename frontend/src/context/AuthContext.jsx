@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }) => {
 
   // DON'T FORGET to add 'register' to this list!
   return (
-    <AuthContext.Provider value={{ user, login, register, verifyEmail, logout }}>
+    <AuthContext.Provider value={{ user, setUser, login, register, verifyEmail, logout }}>
       {children}
     </AuthContext.Provider>
   );

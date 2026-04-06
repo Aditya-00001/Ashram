@@ -73,7 +73,7 @@ export default function AdminDashboard() {
   const [newsletterStatus, setNewsletterStatus] = useState('');
 
   const [galleryFormData, setGalleryFormData] = useState({ 
-    image: null, type: 'Archive', eventId: '', caption: '' 
+    images: [], type: 'Archive', eventId: '', caption: '' 
   });
   const [isUploading, setIsUploading] = useState(false);
 
@@ -116,7 +116,7 @@ export default function AdminDashboard() {
           }
         }
         else if (activeTab === 'gallery') {
-          const res = await fetch(`http://localhost:5000/api/gallery?page=${galleryPage}&limit=12`, { headers });
+          const res = await fetch(`http://localhost:5000/api/gallery?page=${galleryPage}&limit=50`, { headers });
           if (res.ok) {
             const data = await res.json();
             setGalleryImages(data.images);
@@ -245,17 +245,23 @@ export default function AdminDashboard() {
   };
 
   // --- GALLERY HANDLERS ---
-  const handleGalleryFileChange = (e) => {
-    setGalleryFormData({ ...galleryFormData, image: e.target.files[0] });
+   const handleGalleryFileChange = (e) => {
+    // Convert the FileList object into a standard array
+    setGalleryFormData({ ...galleryFormData, images: Array.from(e.target.files) });
   };
 
   const handleGalleryUpload = async (e) => {
     e.preventDefault();
-    if (!galleryFormData.image) return alert("Please select an image first!");
+    if (galleryFormData.images.length === 0) return alert("Please select at least one image!");
     
     setIsUploading(true);
     const formData = new FormData();
-    formData.append('image', galleryFormData.image);
+    
+    // --- UPDATED: Loop through and append every selected image ---
+    galleryFormData.images.forEach(file => {
+      formData.append('images', file); 
+    });
+    
     formData.append('type', galleryFormData.type);
     formData.append('caption', galleryFormData.caption);
     if (galleryFormData.type === 'Event' && galleryFormData.eventId) {
@@ -265,19 +271,18 @@ export default function AdminDashboard() {
     try {
       const res = await fetch('http://localhost:5000/api/gallery', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${user.token}` }, // NO Content-Type here!
+        headers: { 'Authorization': `Bearer ${user.token}` },
         body: formData
       });
 
       if (res.ok) {
-        const newImg = await res.json();
-        setGalleryImages([newImg, ...galleryImages]); // Add to UI instantly
-        setGalleryFormData({ image: null, type: 'Archive', eventId: '', caption: '' }); // Reset form
-        document.getElementById('galleryFileInput').value = ''; // Clear file input UI
+        const newImgs = await res.json();
+        // Add all new images to the UI
+        setGalleryImages([...newImgs, ...galleryImages]); 
+        setGalleryFormData({ images: [], type: 'Archive', eventId: '', caption: '' });
+        document.getElementById('galleryFileInput').value = ''; 
       }
-    } catch (err) {
-      console.error("Upload failed", err);
-    }
+    } catch (err) { console.error("Upload failed", err); }
     setIsUploading(false);
   };
 
@@ -327,6 +332,23 @@ export default function AdminDashboard() {
     
     setIsSendingNewsletter(false);
   };
+
+  // --- GROUP GALLERY IMAGES FOR ADMIN UI ---
+  const groupedAlbums = {};
+  const archives = [];
+  
+  galleryImages.forEach(img => {
+    if (img.type === 'Event' && img.eventId) {
+      const eId = img.eventId._id || img.eventId;
+      const eTitle = img.eventId.title || 'Unknown Event';
+      if (!groupedAlbums[eId]) {
+        groupedAlbums[eId] = { eventId: eId, eventTitle: eTitle, images: [] };
+      }
+      groupedAlbums[eId].images.push(img);
+    } else {
+      archives.push(img);
+    }
+  });
  
  
   return (
@@ -555,7 +577,8 @@ export default function AdminDashboard() {
               <div className="form-row">
                 <div className="input-group">
                   <label>Select Image</label>
-                  <input type="file" id="galleryFileInput" accept="image/*" onChange={handleGalleryFileChange} required />
+                  <input type="file" id="galleryFileInput" accept="image/*" multiple onChange={handleGalleryFileChange} required />
+                  <small style={{display: 'block', color: '#888', marginTop: '5px'}}>Hold Ctrl/Cmd to select multiple images</small>
                 </div>
                 <div className="input-group">
                   <label>Image Type</label>
@@ -572,7 +595,7 @@ export default function AdminDashboard() {
                   <label>Link to Event</label>
                   <select value={galleryFormData.eventId} onChange={(e) => setGalleryFormData({...galleryFormData, eventId: e.target.value})} required>
                     <option value="">-- Select an Event --</option>
-                    {events.map(ev => (
+                    {(events || []).map(ev => (
                       <option key={ev._id} value={ev._id}>{ev.title} ({ev.date})</option>
                     ))}
                   </select>
@@ -589,24 +612,66 @@ export default function AdminDashboard() {
               </button>
             </form>
 
-            {/* IMAGE GRID */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
-              {galleryImages.length === 0 ? <p style={{ color: '#ccc' }}>No images in the gallery yet.</p> : null}
-              {galleryImages.map(img => (
-                <div key={img._id} style={{ backgroundColor: '#242424', borderRadius: '8px', overflow: 'hidden', border: '1px solid #333' }}>
-                  <img src={img.imageUrl} alt={img.caption} style={{ width: '100%', height: '150px', objectFit: 'cover' }} />
-                  <div style={{ padding: '10px' }}>
-                    <span style={{ fontSize: '0.8rem', color: '#e67e22', display: 'block', marginBottom: '5px' }}>
-                      {img.type} {img.eventId && `• ${img.eventId.title}`}
-                    </span>
-                    <p style={{ fontSize: '0.9rem', color: '#ccc', margin: '0 0 10px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {img.caption || 'No caption'}
-                    </p>
-                    <button onClick={() => handleDeleteGalleryImage(img._id)} style={{ width: '100%', padding: '5px', backgroundColor: 'transparent', border: '1px solid #ff4757', color: '#ff4757', borderRadius: '4px', cursor: 'pointer' }}>Delete</button>
+            {/* --- EVENT ALBUMS --- */}
+            {Object.values(groupedAlbums).map(album => (
+              <div key={album.eventId} style={{ marginBottom: '40px', backgroundColor: '#2a2a2a', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #e67e22' }}>
+                
+                {/* Album Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #444', paddingBottom: '15px', marginBottom: '20px' }}>
+                  <div>
+                    <h4 style={{ color: '#e67e22', margin: '0 0 5px 0', fontSize: '1.2rem' }}>📁 {album.eventTitle}</h4>
+                    <span style={{ color: '#888', fontSize: '0.9rem' }}>{album.images.length} Photos in this album</span>
                   </div>
+                  {/* Shortcut to add more photos to this specific event */}
+                  <button 
+                    onClick={() => {
+                      setGalleryFormData({...galleryFormData, type: 'Event', eventId: album.eventId});
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    style={{ backgroundColor: 'transparent', border: '1px solid #e67e22', color: '#e67e22', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}
+                  >
+                    + Add Photos Here
+                  </button>
                 </div>
-              ))}
-            </div>
+                
+                {/* Album Mini-Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' }}>
+                  {album.images.map(img => (
+                    <div key={img._id} style={{ backgroundColor: '#1a1a1a', borderRadius: '6px', overflow: 'hidden', border: '1px solid #333' }}>
+                      <img src={img.imageUrl} alt={img.caption} style={{ width: '100%', height: '120px', objectFit: 'cover' }} />
+                      <div style={{ padding: '8px' }}>
+                        <p style={{ fontSize: '0.8rem', color: '#ccc', margin: '0 0 8px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {img.caption || 'No caption'}
+                        </p>
+                        <button onClick={() => handleDeleteGalleryImage(img._id)} style={{ width: '100%', padding: '5px', backgroundColor: '#ff475722', border: '1px solid #ff4757', color: '#ff4757', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>Delete Image</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* --- GENERAL ARCHIVE --- */}
+            {archives.length > 0 && (
+              <div style={{ marginBottom: '40px', backgroundColor: '#2a2a2a', padding: '20px', borderRadius: '8px' }}>
+                <h4 style={{ color: '#e67e22', margin: '0 0 20px 0', borderBottom: '1px solid #444', paddingBottom: '10px' }}>🗄️ General Archive</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' }}>
+                  {archives.map(img => (
+                    <div key={img._id} style={{ backgroundColor: '#1a1a1a', borderRadius: '6px', overflow: 'hidden', border: '1px solid #333' }}>
+                      <img src={img.imageUrl} alt={img.caption} style={{ width: '100%', height: '120px', objectFit: 'cover' }} />
+                      <div style={{ padding: '8px' }}>
+                        <p style={{ fontSize: '0.8rem', color: '#ccc', margin: '0 0 8px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {img.caption || 'No caption'}
+                        </p>
+                        <button onClick={() => handleDeleteGalleryImage(img._id)} style={{ width: '100%', padding: '5px', backgroundColor: '#ff475722', border: '1px solid #ff4757', color: '#ff4757', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>Delete Image</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {galleryImages.length === 0 && <p style={{ color: '#ccc' }}>No images in the gallery yet.</p>}  
 
             {/* GALLERY PAGINATION */}
             {totalGalleryPages > 1 && (
