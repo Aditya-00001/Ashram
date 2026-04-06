@@ -326,6 +326,7 @@ export default function AdminDashboard() {
       } else {
         setNewsletterStatus({ type: 'error', text: data.message });
       }
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
       setNewsletterStatus({ type: 'error', text: 'Failed to connect to the server.' });
     }

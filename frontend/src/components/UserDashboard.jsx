@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -57,7 +58,7 @@ export default function UserDashboard() {
       } else {
         setStatusMsg({ type: 'error', text: data.message });
       }
-    } catch (err) { setStatusMsg({ type: 'error', text: `Failed to update profile.${err}` }); }
+    } catch (err) { setStatusMsg({ type: 'error', text: 'Failed to update profile.' }); }
   };
 
   const handleUpdatePassword = async (e) => {
