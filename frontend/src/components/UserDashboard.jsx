@@ -3,6 +3,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './UserDashboard.css';
+import { jsPDF } from "jspdf";
 
 export default function UserDashboard() {
   // --- ADDED: setUser to instantly update the UI name ---
@@ -89,6 +90,68 @@ export default function UserDashboard() {
     navigate('/login');
   };
 
+  // --- PDF RECEIPT GENERATOR ---
+  const handleDownloadReceipt = (donation) => {
+    // 1. Create a new PDF document (Portrait, Millimeters, A4 size)
+    const doc = new jsPDF('p', 'mm', 'a4');
+
+    // 2. Set up fonts and colors
+    doc.setFont("helvetica");
+    
+    // --- HEADER ---
+    doc.setTextColor(230, 126, 34); // Ashram Orange
+    doc.setFontSize(24);
+    doc.text("ACHYUTA ANANTA ASHRAM", 105, 20, { align: "center" });
+    
+    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(12);
+    doc.text("Official Donation Receipt", 105, 28, { align: "center" });
+    
+    // Divider Line
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, 35, 190, 35);
+
+    // --- RECEIPT DETAILS ---
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(14);
+    doc.text("Receipt Details", 20, 50);
+    
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    
+    // Left Column
+    doc.text(`Date: ${new Date(donation.createdAt).toLocaleDateString()}`, 20, 65);
+    doc.text(`Donor Name: ${user.name}`, 20, 75);
+    doc.text(`Email: ${user.email}`, 20, 85);
+    
+    // Right Column
+    doc.text(`Receipt ID: ${donation._id.slice(-8).toUpperCase()}`, 120, 65);
+    doc.text(`Status: ${donation.status}`, 120, 75);
+
+    // --- DONATION AMOUNT BOX ---
+    doc.setFillColor(250, 245, 240); // Light orange background
+    doc.rect(20, 100, 170, 30, 'F');
+    
+    doc.setFontSize(14);
+    doc.text("Donation Purpose:", 25, 110);
+    doc.setFont("helvetica", "bold");
+    doc.text(donation.purpose, 25, 120);
+    
+    doc.setFontSize(18);
+    doc.setTextColor(230, 126, 34);
+    doc.text(`Amount: Rs. ${donation.amount}`, 130, 117);
+
+    // --- FOOTER ---
+    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "italic");
+    doc.text("May the divine blessings of Achyuta Ananta always be with you.", 105, 150, { align: "center" });
+    doc.text("This is a computer-generated receipt and does not require a physical signature.", 105, 160, { align: "center" });
+
+    // 3. Trigger the automatic download
+    doc.save(`Ashram_Receipt_${donation._id.slice(-6)}.pdf`);
+  };
+
   if (!user) return null; 
 
   return (
@@ -141,7 +204,13 @@ export default function UserDashboard() {
                 <div className="table-responsive">
                   <table className="history-table">
                     <thead>
-                      <tr><th>Date</th><th>Purpose</th><th>Amount</th><th>Status</th></tr>
+                      <tr>
+                        <th>Date</th>
+                        <th>Purpose</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Action</th> {/* Added Action Column */}
+                      </tr>
                     </thead>
                     <tbody>
                       {donations.map((don) => (
@@ -150,6 +219,27 @@ export default function UserDashboard() {
                           <td>{don.purpose}</td>
                           <td>₹{don.amount}</td>
                           <td><span className={`status-badge ${don.status.toLowerCase()}`}>{don.status}</span></td>
+                          <td>
+                            {/* Only allow downloads for successful donations! */}
+                            {don.status === 'Successful' ? (
+                              <button 
+                                onClick={() => handleDownloadReceipt(don)}
+                                style={{ 
+                                  backgroundColor: 'transparent', 
+                                  border: '1px solid #e67e22', 
+                                  color: '#e67e22', 
+                                  padding: '4px 10px', 
+                                  borderRadius: '4px', 
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem'
+                                }}
+                              >
+                                📄 PDF
+                              </button>
+                            ) : (
+                              <span style={{ color: '#888', fontSize: '0.8rem' }}>N/A</span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
