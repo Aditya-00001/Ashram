@@ -90,7 +90,7 @@ export default function AdminDashboard() {
       const headers = { 'Authorization': `Bearer ${user.token}` };
       try {
         if (activeTab === 'events') {
-          const res = await fetch(`http://localhost:5000/api/events?page=${eventPage}&limit=10`);
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/events?page=${eventPage}&limit=10`);
           // --- FIX: Extract the array and the page count ---
           if (res.ok) {
             const data = await res.json();
@@ -99,7 +99,7 @@ export default function AdminDashboard() {
           }
         } 
         else if (activeTab === 'donations') {
-          const res = await fetch(`http://localhost:5000/api/donations?page=${donationPage}&limit=10`, { headers });
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/donations?page=${donationPage}&limit=10`, { headers });
           if (res.ok) {
             const data = await res.json();
             setDonations(data.donations); 
@@ -107,7 +107,7 @@ export default function AdminDashboard() {
           }
         } 
         else if (activeTab === 'messages') {
-          const res = await fetch(`http://localhost:5000/api/messages?page=${messagePage}&limit=10`, { headers });
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/messages?page=${messagePage}&limit=10`, { headers });
           // --- FIX: Extract the array and the page count ---
           if (res.ok) {
             const data = await res.json();
@@ -116,7 +116,7 @@ export default function AdminDashboard() {
           }
         }
         else if (activeTab === 'gallery') {
-          const res = await fetch(`http://localhost:5000/api/gallery?page=${galleryPage}&limit=50`, { headers });
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/gallery?page=${galleryPage}&limit=50`, { headers });
           if (res.ok) {
             const data = await res.json();
             setGalleryImages(data.images);
@@ -196,8 +196,8 @@ export default function AdminDashboard() {
     
 
     const url = editingEventId 
-      ? `http://localhost:5000/api/events/${editingEventId}` 
-      : 'http://localhost:5000/api/events';
+      ? `${import.meta.env.VITE_API_URL}/api/events/${editingEventId}` 
+      : `${import.meta.env.VITE_API_URL}/api/events`;
     const method = editingEventId ? 'PUT' : 'POST';
 
     try {
@@ -223,7 +223,7 @@ export default function AdminDashboard() {
 
   const handleDeleteEvent = async (id) => {
     if (window.confirm("Are you sure you want to delete this event?")) {
-      const res = await fetch(`http://localhost:5000/api/events/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/events/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${user.token}` }
       });
@@ -232,7 +232,7 @@ export default function AdminDashboard() {
   };
 
   const handleMarkAsRead = async (id) => {
-    const res = await fetch(`http://localhost:5000/api/messages/${id}/read`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/messages/${id}/read`, {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${user.token}` }
     });
@@ -269,7 +269,7 @@ export default function AdminDashboard() {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/gallery', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/gallery`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${user.token}` },
         body: formData
@@ -288,7 +288,7 @@ export default function AdminDashboard() {
 
   const handleDeleteGalleryImage = async (id) => {
     if (window.confirm("Delete this image permanently from the database and Cloudinary?")) {
-      const res = await fetch(`http://localhost:5000/api/gallery/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/gallery/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${user.token}` }
       });
@@ -309,7 +309,7 @@ export default function AdminDashboard() {
     setNewsletterStatus('');
 
     try {
-      const res = await fetch('http://localhost:5000/api/newsletter/send', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/newsletter/send`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
