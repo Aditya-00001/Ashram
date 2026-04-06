@@ -43,7 +43,7 @@ export default function Support() {
 
     try {
       // 3. Ask your backend to create an Order
-      const orderData = await fetch('http://localhost:5000/api/donations/create-order', {
+      const orderData = await fetch(`${import.meta.env.VITE_API_URL}/api/donations/create-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ export default function Support() {
           };
 
           // 6. Send signature to backend for cryptographic verification
-          const verifyRes = await fetch('http://localhost:5000/api/donations/verify-payment', {
+          const verifyRes = await fetch(`${import.meta.env.VITE_API_URL}/api/donations/verify-payment`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

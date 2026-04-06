@@ -25,7 +25,7 @@ export default function ResetPassword() {
 
     try {
       // Notice we are using PUT here, and attaching the token to the URL, matching our backend route!
-      const response = await fetch(`http://localhost:5000/api/auth/reset-password/${resetToken}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/reset-password/${resetToken}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),

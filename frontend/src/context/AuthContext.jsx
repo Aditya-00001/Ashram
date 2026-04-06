@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
   // --- NEW: Verify Email Function ---
   const verifyEmail = async (email, code) => {
-    const response = await fetch('http://localhost:5000/api/auth/verify-email', {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/verify-email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, code }),
@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
   // --- NEW: Registration Function ---
   // Inside AuthContext.jsx
   const register = async (name, email, password) => {
-    const response = await fetch('http://localhost:5000/api/auth/register', {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password }),
@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
 
   // --- EXISTING: Login Function ---
   const login = async (email, password) => {
-    const response = await fetch('http://localhost:5000/api/auth/login', {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

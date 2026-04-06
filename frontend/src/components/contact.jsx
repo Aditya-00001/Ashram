@@ -25,7 +25,7 @@ export default function Contact() {
     
     try {
       // 3. FIXED: We now send the formData state directly to the backend
-      const response = await fetch('http://localhost:5000/api/messages', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

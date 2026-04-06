@@ -27,7 +27,7 @@ export default function UserDashboard() {
     const fetchMyDonations = async () => {
       if (!user) return; 
       try {
-        const response = await fetch('http://localhost:5000/api/donations/my-donations', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/donations/my-donations`, {
           headers: { Authorization: `Bearer ${user.token}` }
         });
         if (response.ok) {
@@ -45,7 +45,7 @@ export default function UserDashboard() {
     e.preventDefault();
     setStatusMsg(null);
     try {
-      const res = await fetch('http://localhost:5000/api/users/profile', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
         body: JSON.stringify({ name: profileName })
@@ -70,7 +70,7 @@ export default function UserDashboard() {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/users/password', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
         body: JSON.stringify({ currentPassword: passwordData.currentPassword, newPassword: passwordData.newPassword })

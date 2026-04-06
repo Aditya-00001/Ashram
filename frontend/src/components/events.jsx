@@ -19,7 +19,7 @@ export default function Events() {
 
       try {
         // --- UPDATED: Fetch with page parameters ---
-        const response = await fetch(`http://localhost:5000/api/events?page=${page}&limit=10`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/events?page=${page}&limit=10`);
         if (!response.ok) throw new Error('Failed to fetch events');
         
         const data = await response.json();

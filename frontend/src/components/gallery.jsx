@@ -18,7 +18,7 @@ export default function Gallery() {
     const fetchImages = async () => {
       try {
         // Fetching a large chunk to group them (you can add pagination back later if needed)
-        const res = await fetch('http://localhost:5000/api/gallery?limit=500');
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/gallery?limit=500`);
         if (res.ok) {
           const data = await res.json();
           

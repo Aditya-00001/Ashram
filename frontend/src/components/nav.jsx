@@ -16,6 +16,7 @@ import VerifyEmail from './VerifyEmail.jsx';
 import ForgotPassword from './ForgotPassword.jsx';
 import ResetPassword from './ResetPassword.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
+import ProtectedRoute from './ProtectedRoute';
 
 export default function Nav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -109,9 +110,17 @@ export default function Nav() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/events" element={<Events />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/dashboard" element={
+          <ProtectedRoute adminOnly={true}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
         <Route path="/register" element={<Register />} />
-        <Route path="/my-profile" element={<UserDashboard />} />
+        <Route path="/my-profile" element={
+          <ProtectedRoute>
+            <UserDashboard />
+          </ProtectedRoute>
+        } />
         <Route path="/admin-portal" element={<AdminLogin />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

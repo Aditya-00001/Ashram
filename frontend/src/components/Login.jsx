@@ -12,12 +12,12 @@ export default function Login() {
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-      e.preventDefault();
-      setError('');
+    e.preventDefault();
+    setError('');
 
-      const result = await login(email, password);
-      
-      if (result.success) {
+    const result = await login(email, password);
+    
+    if (result.success) {
       if (result.role === 'admin') {
         // If an admin accidentally uses the public login, redirect them to the secret portal
         navigate('/admin-portal'); 
@@ -25,7 +25,10 @@ export default function Login() {
         navigate('/my-profile');
       }
     }
-    };
+    else {
+      setError(result.message || 'Login failed. Please try again.');
+    }
+  };
 
   return (
     <div className="contact-page" style={{ minHeight: '80vh', display: 'flex', alignItems: 'center' }}>

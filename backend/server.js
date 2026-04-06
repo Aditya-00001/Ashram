@@ -36,7 +36,22 @@ const authLimiter = rateLimit({
 
 // --- MIDDLEWARE ---
 // Allows your React frontend (e.g., localhost:5173) to communicate with this API
-app.use(cors()); 
+// In production, we only allow requests from YOUR deployed React app
+const allowedOrigins = [
+  'http://localhost:5173', // Your local React testing
+  process.env.FRONTEND_URL   // The future Vercel/live URL
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
 // Parses incoming JSON data from HTTP requests (like your Contact form)
 app.use(express.json()); 
 

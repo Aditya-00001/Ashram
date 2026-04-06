@@ -7,7 +7,7 @@ import Nav from './components/nav.jsx'
 import Footer from './components/footer.jsx'
 import { BrowserRouter } from 'react-router-dom';
 import AdminDashboard from './components/AdminDashboard.jsx';
-
+import ProtectedRoute from './components/ProtectedRoute';
 function App() {
   // const [count, setCount] = useState(0)
 
