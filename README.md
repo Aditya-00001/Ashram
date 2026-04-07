@@ -52,3 +52,49 @@ A full-stack, enterprise-grade spiritual community portal built with the MERN st
 ```bash
 git clone [https://github.com/Aditya-00001/Ashram.git](https://github.com/Aditya-00001/Ashram.git)
 cd Ashram
+```
+### 2. Setup Environment Variables
+Create a .env file in the backend folder and add the following:
+
+```bash
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_super_secret_key
+EMAIL_USER=your_gmail_address
+EMAIL_PASS=your_gmail_app_password
+CLOUDINARY_CLOUD_NAME=your_cloudinary_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+FRONTEND_URL=http://localhost:5173
+```
+```bash
+Create a .env file in the frontend folder and add:
+
+Code snippet
+VITE_API_URL=http://localhost:5000
+```
+### 3. Install Dependencies & Run
+Open two terminal windows.
+
+Terminal 1 (Backend):
+```bash
+cd backend
+npm install
+npm run dev
+Terminal 2 (Frontend):
+```
+```bash
+cd frontend
+npm install
+npm run dev
+```
+---
+## 🌐 Live Deployment
+**Frontend**: [Achyuta Ashram Portal](https://ashram-amber.vercel.app/)
+
+**Status**: Production-Ready
+
+Architected and developed with dedication to clean code, secure APIs, and responsive design.
+
+
+***
