@@ -19,7 +19,7 @@ export default function Footer() {
         <div className="footer-section links">
           <h4>Explore</h4>
           <Link to="/about">About Us</Link>
-          <Link to="/schedule">Daily Schedule</Link>
+          {/* <Link to="/event">Daily Schedule</Link> */}
           <Link to="/events">Events</Link>
         </div>
 

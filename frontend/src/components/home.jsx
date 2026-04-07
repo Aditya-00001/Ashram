@@ -31,7 +31,7 @@ export default function Home() {
         <div className="container">
           <h2>Our Philosophy</h2>
           <p className="description-placeholder">
-            [Placeholder: Achyuta Ashram is a sacred space dedicated to the pursuit of truth and selfless service. Nestled in nature, we provide a supportive environment for seekers to deepen their spiritual practice, connect with a mindful community, and rediscover their inner silence.]
+            Achyuta Ashram is a sacred space dedicated to the pursuit of truth and selfless service. Nestled in nature, we provide a supportive environment for seekers to deepen their spiritual practice, connect with a mindful community, and rediscover their inner silence.
           </p>
         </div>
       </section>

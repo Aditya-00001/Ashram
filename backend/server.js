@@ -11,6 +11,8 @@ import messageRoutes from './routes/messageRoutes.js';
 import galleryRoutes from './routes/galleryRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import morgan from 'morgan';
+import logger from './utils/logger.js';
 
 // Load environment variables
 dotenv.config();
@@ -55,6 +57,9 @@ app.use(cors({
 // Parses incoming JSON data from HTTP requests (like your Contact form)
 app.use(express.json()); 
 
+app.use(morgan('combined', {
+  stream: { write: (message) => logger.info(message.trim()) }
+}));
 // --- DATABASE CONNECTION ---
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB connected successfully'))

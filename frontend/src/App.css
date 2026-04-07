@@ -21,25 +21,30 @@ html, body {
   overflow-x: hidden;
 }
 
-/* my styles */
+/* --- TOP NAVIGATION BAR --- */
 .nav {
   display: flex;
-  justify-content: space-between; /* Pushes logo left and nav-links right */
+  justify-content: space-between; 
   align-items: center;
   height: 60px;
   background-color: #333;
   color: white;
   padding: 0 2rem;
+  position: relative; /* Crucial for the dropdown to attach properly */
+  z-index: 1000;
 }
 
 .nav-logo h2 {
   margin: 0;
-  color: white; /* Optional: adjust to match your logo styling */
+  color: white; 
 }
 
-.nav-links {
+.desktop-primary-links {
   display: flex;
-  gap: 20px; /* Adds space between your links */
+  gap: 30px;
+  align-items: center;
+  margin-left: auto; /* Pushes the links to the right */
+  margin-right: 40px; /* Leaves space for the hamburger */
 }
 
 .nav-item {
@@ -50,26 +55,22 @@ html, body {
 }
 
 .nav-item:hover {
-  color: #ccc; /* Slight hover effect */
+  color: #e67e22; /* Ashram orange hover effect */
 }
 
-/* This hides the link when the route is active */
 .hidden-link {
-  display: none;
+  display: none !important;
 }
 
-/* --- HAMBURGER MENU & MOBILE NAV STYLES --- */
-
-/* Hide the hamburger icon on desktop */
+/* --- THE HAMBURGER ICON (Now visible everywhere!) --- */
 .hamburger {
-  display: none;
+  display: flex; 
   flex-direction: column;
   cursor: pointer;
   gap: 5px;
-  z-index: 100; /* Keeps it above the menu */
+  z-index: 101; 
 }
 
-/* The three lines of the hamburger icon */
 .hamburger .bar {
   width: 25px;
   height: 3px;
@@ -78,48 +79,72 @@ html, body {
   transition: all 0.3s ease;
 }
 
-/* Mobile Responsiveness */
+/* --- THE DESKTOP DROPDOWN MENU --- */
+.nav-links {
+  position: absolute;
+  top: 60px; /* Drops directly below the navbar */
+  right: 0;
+  width: 250px; /* Clean, compact width for laptops */
+  background-color: #333333;
+  display: flex;
+  flex-direction: column; 
+  align-items: center;
+  padding: 0;
+  
+  /* Slide/Fade animation */
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.4s ease, opacity 0.4s ease;
+  z-index: 99; 
+  
+  /* Stylish bottom-left border for the dropdown corner */
+  border-bottom-left-radius: 8px;
+  box-shadow: -4px 4px 15px rgba(0,0,0,0.3);
+  border-bottom: 2px solid #e67e22; 
+  border-left: 2px solid #e67e22;
+}
+
+.nav-links.open {
+  max-height: 500px; 
+  opacity: 1;
+  padding: 15px 0;
+}
+
+.nav-links .nav-item {
+  padding: 12px 0;
+  width: 100%;
+  text-align: center;
+}
+
+/* Hide the mobile duplicates when on a laptop */
+.mobile-only-link {
+  display: none !important;
+}
+
+/* --- MOBILE RESPONSIVENESS (< 768px) --- */
 @media screen and (max-width: 768px) {
-  .hamburger {
-    display: flex; /* Show hamburger on mobile */
+  
+  /* Hide the primary laptop links */
+  .desktop-primary-links {
+    display: none; 
   }
 
+  /* Reveal the duplicates inside the mobile hamburger menu */
+  .mobile-only-link {
+    display: block !important; 
+  }
+
+  /* Make the dropdown span the entire width of the screen */
   .nav-links {
-    position: absolute;
-    top: 60px; /* Aligns just below your 60px height navbar */
-    left: 0;
-    width: 100%;
-    background-color: #333333;
-    flex-direction: column; /* Stacks links vertically */
-    align-items: center;
-    padding: 0;
-    
-    /* Hide the menu by default by sliding it up and fading it out */
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    transition: max-height 0.4s ease, opacity 0.4s ease;
-    z-index: 99; /* Ensures it drops down OVER the page content */
-    border-bottom: 2px solid #e67e22; /* Adds a nice saffron accent line at the bottom */
+    width: 100%; 
+    border-left: none; /* Remove desktop styling */
+    border-bottom-left-radius: 0;
   }
-
-  /* When the 'open' class is added via React state */
+  
   .nav-links.open {
-    max-height: 400px; /* Allows enough room for the links */
-    opacity: 1;
-    padding: 20px 0;
-    max-height: calc(100vh - 80px); /* Prevents the menu from being taller than the screen (adjust 80px to your actual navbar height) */
-    overflow-y: auto;               /* Turns on vertical scrolling! */
-    padding-bottom: 30px;           /* Adds a little breathing room at the very bottom so the last item isn't squished */
-  }
-  .nav-links.open::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Add some spacing to the vertical links */
-  .nav-item {
-    padding: 15px 0;
-    width: 100%;
-    text-align: center;
+    max-height: calc(100vh - 60px); /* Allow scrolling if menu is huge */
+    overflow-y: auto;               
+    padding-bottom: 30px;           
   }
 }
