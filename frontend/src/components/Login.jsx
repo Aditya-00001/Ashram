@@ -18,13 +18,13 @@ export default function Login() {
     const result = await login(email, password);
     
     if (result.success) {
-      if (result.role === 'admin') {
-        // If an admin accidentally uses the public login, redirect them to the secret portal
-        navigate('/admin-portal'); 
-      } else {
-        navigate('/my-profile');
+        if (result.role === 'admin') {
+          // Bypass the secret portal and send them straight to the Dashboard!
+          navigate('/admin/dashboard'); 
+        } else {
+          navigate('/my-profile');
+        }
       }
-    }
     else {
       setError(result.message || 'Login failed. Please try again.');
     }
