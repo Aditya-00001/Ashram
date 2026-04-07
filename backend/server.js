@@ -19,7 +19,7 @@ dotenv.config();
 
 // Initialize Express
 const app = express();
-
+app.set('trust proxy', 1);
 // 2. Create the limiters BEFORE your routes
 // General API Limiter: 100 requests per 15 minutes per IP
 const apiLimiter = rateLimit({
