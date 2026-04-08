@@ -118,7 +118,7 @@ export const forgotPassword = async (req, res) => {
 
     // Send email
     // NOTE: In production, change localhost:5173 to your real domain!
-    const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
     const message = `You requested a password reset.\n\nPlease click on the following link, or paste it into your browser to complete the process:\n\n${resetUrl}`;
 
     try {
