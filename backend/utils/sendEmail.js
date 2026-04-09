@@ -3,14 +3,16 @@ import nodemailer from 'nodemailer';
 const sendEmail = async (options) => {
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // MUST be false for port 587
+    port: 465,           // Using the secure port
+    secure: true,        // MUST be true for 465
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
-    // --- THIS IS THE MAGIC FIX ---
-    family: 4, // Forces Nodemailer to use IPv4, bypassing Render's broken IPv6 network
+    family: 4,           // Force IPv4
+    tls: {
+      rejectUnauthorized: false // Bypasses overly strict local certificate checks
+    }
   });
 
   const mailOptions = {
