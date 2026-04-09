@@ -1,27 +1,26 @@
 import nodemailer from 'nodemailer';
 
 const sendEmail = async (options) => {
-  // 1. Create a transporter (the "mail truck")
   const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
-    secure: false, // true for port 465/false for 587
+    secure: false, // MUST be false for port 587
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+    // --- THIS IS THE MAGIC FIX ---
+    family: 4, // Forces Nodemailer to use IPv4, bypassing Render's broken IPv6 network
   });
 
-  // 2. Define the email options
   const mailOptions = {
     from: `"Achyuta Ashram" <${process.env.EMAIL_USER}>`,
     to: options.email,
     subject: options.subject,
-    text: options.message, // Plain text version
-    html: options.html,    // HTML version (optional but looks nicer!)
+    text: options.message,
+    html: options.html,
   };
 
-  // 3. Send the email
   await transporter.sendMail(mailOptions);
 };
 
