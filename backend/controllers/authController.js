@@ -38,6 +38,7 @@ export const registerUser = async (req, res) => {
         res.status(201).json({ success: true, message: 'Verification email sent' });
       } catch (err) {
         // If email fails, we shouldn't keep the unverified user stuck in the DB
+        console.error('Nodemailer Error:', err);
         await User.findByIdAndDelete(user._id);
         res.status(500).json({ message: 'Email could not be sent. Please try again.' });
       }
