@@ -1,29 +1,35 @@
-import nodemailer from 'nodemailer';
-
+// We don't even need nodemailer anymore! We are using standard HTTPS.
 const sendEmail = async (options) => {
-  const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,           // Using the secure port
-    secure: true,        // MUST be true for 465
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+  const apiKey = process.env.BREVO_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('Missing Brevo API Key');
+  }
+
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'api-key': apiKey,
+      'content-type': 'application/json'
     },
-    family: 4,           // Force IPv4
-    tls: {
-      rejectUnauthorized: false // Bypasses overly strict local certificate checks
-    }
+    body: JSON.stringify({
+      sender: { 
+        name: 'Achyuta Ananta Ashram', 
+        email: process.env.EMAIL_USER // Your verified Ashram Gmail
+      },
+      to: [{ email: options.email }],
+      subject: options.subject,
+      // If you pass html, use it. Otherwise, wrap the text message in paragraph tags.
+      htmlContent: options.html || `<p>${options.message.replace(/\n/g, '<br>')}</p>` 
+    })
   });
 
-  const mailOptions = {
-    from: `"Achyuta Ashram" <${process.env.EMAIL_USER}>`,
-    to: options.email,
-    subject: options.subject,
-    text: options.message,
-    html: options.html,
-  };
-
-  await transporter.sendMail(mailOptions);
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error('Brevo API Error:', errorData);
+    throw new Error('Failed to send email via Brevo API');
+  }
 };
 
 export default sendEmail;
