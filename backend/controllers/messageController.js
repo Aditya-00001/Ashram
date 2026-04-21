@@ -29,9 +29,17 @@ export const getMessages = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    
+    const search = req.query.search || '';
+    const query = search ? {
+      $or: [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ]
+    } : {};
 
-    const total = await Message.countDocuments();
-    const messages = await Message.find()
+    const total = await Message.countDocuments(query);
+    const messages = await Message.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);

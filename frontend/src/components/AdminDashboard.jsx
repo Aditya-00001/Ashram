@@ -77,6 +77,15 @@ export default function AdminDashboard() {
   });
   const [isUploading, setIsUploading] = useState(false);
 
+  // --- NEW: Users State ---
+  const [usersList, setUsersList] = useState([]);
+  const [userPage, setUserPage] = useState(1);         // Add this
+  const [totalUserPages, setTotalUserPages] = useState(1); // Add this
+  
+  // --- NEW: Search State ---
+  const [searchInput, setSearchInput] = useState(''); // What the user types
+  const [appliedSearch, setAppliedSearch] = useState(''); // What we actually send to the API
+  
   useEffect(() => {
     if (!user || user.role !== 'admin') {
       navigate('/admin-portal');
@@ -90,7 +99,7 @@ export default function AdminDashboard() {
       const headers = { 'Authorization': `Bearer ${user.token}` };
       try {
         if (activeTab === 'events') {
-          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/events?page=${eventPage}&limit=10`);
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/events?page=${eventPage}&limit=10&search=${appliedSearch}`);
           // --- FIX: Extract the array and the page count ---
           if (res.ok) {
             const data = await res.json();
@@ -99,7 +108,7 @@ export default function AdminDashboard() {
           }
         } 
         else if (activeTab === 'donations') {
-          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/donations?page=${donationPage}&limit=10`, { headers });
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/donations?page=${donationPage}&limit=10&search=${appliedSearch}`, { headers });
           if (res.ok) {
             const data = await res.json();
             setDonations(data.donations); 
@@ -107,7 +116,7 @@ export default function AdminDashboard() {
           }
         } 
         else if (activeTab === 'messages') {
-          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/messages?page=${messagePage}&limit=10`, { headers });
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/messages?page=${messagePage}&limit=10&search=${appliedSearch}`, { headers });
           // --- FIX: Extract the array and the page count ---
           if (res.ok) {
             const data = await res.json();
@@ -116,17 +125,27 @@ export default function AdminDashboard() {
           }
         }
         else if (activeTab === 'gallery') {
-          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/gallery?page=${galleryPage}&limit=50`, { headers });
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/gallery?page=${galleryPage}&limit=50&search=${appliedSearch}`, { headers });
           if (res.ok) {
             const data = await res.json();
             setGalleryImages(data.images);
             setTotalGalleryPages(data.totalPages);
           }
         }
+        else if (activeTab === 'users') {
+          // Pass the userPage dynamically into the URL
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users?page=${userPage}&limit=10&search=${appliedSearch}`, { headers });
+          if (res.ok) {
+            const data = await res.json();
+            // Extract the arrays and page counts from the new backend response
+            setUsersList(data.users);
+            setTotalUserPages(data.totalPages);
+          }
+        }
       } catch (error) { console.error("Failed to fetch data:", error); }
     };
     fetchData();
-  }, [activeTab, user, donationPage, eventPage, messagePage, galleryPage]);
+  }, [activeTab, user, donationPage, eventPage, messagePage, galleryPage, userPage, appliedSearch]);
   const handleFormChange = (e) => {
     setEventFormData({ ...eventFormData, [e.target.name]: e.target.value });
   };
@@ -237,6 +256,34 @@ export default function AdminDashboard() {
       headers: { 'Authorization': `Bearer ${user.token}` }
     });
     if (res.ok) setMessages(messages.map(msg => msg._id === id ? { ...msg, status: 'read' } : msg));
+  };
+
+  // --- NEW: User Role Handler ---
+  const handleRoleChange = async (userId, newRole) => {
+    // Prevent accidental clicks
+    if (!window.confirm(`Change this user's role to ${newRole.toUpperCase()}?`)) return;
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${userId}/role`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}` 
+        },
+        body: JSON.stringify({ role: newRole })
+      });
+
+      if (res.ok) {
+        const updatedUser = await res.json();
+        // Update the list in the UI instantly without reloading the page
+        setUsersList(usersList.map(u => u._id === userId ? updatedUser : u));
+      } else {
+        const errorData = await res.json();
+        alert(errorData.message || "Failed to update role");
+      }
+    } catch (err) {
+      console.error("Error updating role:", err);
+    }
   };
 
   const handleLogout = () => {
@@ -351,7 +398,52 @@ export default function AdminDashboard() {
     }
   });
  
- 
+  // --- REUSABLE SEARCH BAR UI ---
+  const renderSearchBar = () => (
+    <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+      <input 
+        type="text" 
+        placeholder="Search by name or email..." 
+        value={searchInput} 
+        onChange={(e) => setSearchInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            setAppliedSearch(searchInput);
+            // Reset pages to 1 when a search happens!
+            if (activeTab === 'users') setUserPage(1);
+            if (activeTab === 'donations') setDonationPage(1);
+            if (activeTab === 'messages') setMessagePage(1);
+          }
+        }}
+        style={{ flex: 1, padding: '10px', backgroundColor: '#1a1a1a', color: '#fff', border: '1px solid #444', borderRadius: '4px' }}
+      />
+      <button 
+        onClick={() => {
+          setAppliedSearch(searchInput);
+          if (activeTab === 'users') setUserPage(1);
+          if (activeTab === 'donations') setDonationPage(1);
+          if (activeTab === 'messages') setMessagePage(1);
+        }} 
+        className="cta-button" 
+        style={{ padding: '0 20px' }}
+      >
+        Search
+      </button>
+      {appliedSearch && (
+        <button 
+          onClick={() => {
+            setSearchInput('');
+            setAppliedSearch('');
+          }} 
+          className="cancel-btn" 
+          style={{ padding: '0 20px' }}
+        >
+          Clear
+        </button>
+      )}
+    </div>
+  );
+
   return (
     <div className="admin-layout">
       
@@ -359,10 +451,32 @@ export default function AdminDashboard() {
         <h2>Admin Panel</h2>
         <nav className="admin-nav">
           <button className={activeTab === 'events' ? 'active' : ''} onClick={() => { setActiveTab('events'); setShowEventForm(false); }}>📅 Manage Events</button>
-          <button className={activeTab === 'donations' ? 'active' : ''} onClick={() => setActiveTab('donations')}>₹ Donations</button>
-          <button className={activeTab === 'messages' ? 'active' : ''} onClick={() => setActiveTab('messages')}>✉️ Messages</button>
+          <button className={activeTab === 'donations' ? 'active' : ''} 
+          onClick={() => { 
+              setActiveTab('donations'); 
+              setSearchInput(''); 
+              setAppliedSearch(''); 
+              setUserPage(1); // Reset page!
+            }}>₹ Donations</button>
+          <button className={activeTab === 'messages' ? 'active' : ''}
+           onClick={() =>{ 
+            setActiveTab('messages')
+            setSearchInput(''); 
+            setAppliedSearch(''); 
+            setUserPage(1); // Reset page!
+            }}
+           >✉️ Messages</button>
           <button className={activeTab === 'gallery' ? 'active' : ''} onClick={() => setActiveTab('gallery')}>🖼️ Gallery</button>
           <button className={activeTab === 'newsletter' ? 'active' : ''} onClick={() => setActiveTab('newsletter')}>📢 Broadcast</button>
+          <button className={activeTab === 'users' ? 'active' : ''} 
+            onClick={() => { 
+              setActiveTab('users'); 
+              setSearchInput(''); 
+              setAppliedSearch(''); 
+              setUserPage(1); // Reset page!
+            }}>
+            👥 Manage Users
+          </button>        
         </nav>
         <button className="logout-btn" onClick={handleLogout}>Logout</button>
       </aside>
@@ -480,6 +594,7 @@ export default function AdminDashboard() {
         {activeTab === 'donations' && (
           <div className="admin-panel">
             <h3>Recent Donations</h3>
+            {renderSearchBar()}
             <div className="admin-table-container">
               <table className="admin-table">
                 <thead>
@@ -542,6 +657,7 @@ export default function AdminDashboard() {
         {activeTab === 'messages' && (
           <div className="admin-panel">
             <h3>Contact Inquiries</h3>
+            {renderSearchBar()}
             {messages.length === 0 ? <p style={{color: '#ccc'}}>No messages found.</p> : null}
             
             {messages.map(msg => (
@@ -742,6 +858,90 @@ export default function AdminDashboard() {
             </form>
           </div>
         )}
+
+        {/* USERS TAB */}
+        {activeTab === 'users' && (
+          <div className="admin-panel">
+            <h3>Manage Users & Roles</h3>
+            <p style={{ color: '#ccc', marginBottom: '20px' }}>
+              Assign "Trustee" status to give members read-only access to financial dashboards.
+            </p>
+            {renderSearchBar()}
+            
+            <div className="admin-table-container">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Assign Role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usersList.length === 0 ? <tr><td colSpan="4">No users found.</td></tr> : null}
+                  {usersList.map(u => (
+                    <tr key={u._id}>
+                      <td>{u.name}</td>
+                      <td>{u.email}</td>
+                      <td>
+                        <span style={{ color: u.isVerified ? '#2ecc71' : '#ff4757', fontWeight: 'bold' }}>
+                          {u.isVerified ? 'Verified' : 'Unverified'}
+                        </span>
+                      </td>
+                      <td>
+                        <select 
+                          value={u.role} 
+                          onChange={(e) => handleRoleChange(u._id, e.target.value)}
+                          disabled={u._id === user._id} // You can't change your own role here!
+                          style={{
+                            padding: '6px',
+                            backgroundColor: '#1a1a1a',
+                            color: '#fff',
+                            border: '1px solid #444',
+                            borderRadius: '4px',
+                            cursor: u._id === user._id ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          <option value="member">Member</option>
+                          <option value="trustee">Trustee</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* USERS PAGINATION */}
+            {totalUserPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '20px' }}>
+                <button 
+                  onClick={() => setUserPage(prev => Math.max(prev - 1, 1))}
+                  disabled={userPage === 1}
+                  className="cta-button outline-btn"
+                  style={{ padding: '8px 16px', opacity: userPage === 1 ? 0.5 : 1, cursor: userPage === 1 ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}
+                >
+                  Previous
+                </button>
+                
+                <span style={{ color: '#ccc' }}>
+                  Page {userPage} of {totalUserPages}
+                </span>
+
+                <button 
+                  onClick={() => setUserPage(prev => Math.min(prev + 1, totalUserPages))}
+                  disabled={userPage === totalUserPages}
+                  className="cta-button outline-btn"
+                  style={{ padding: '8px 16px', opacity: userPage === totalUserPages ? 0.5 : 1, cursor: userPage === totalUserPages ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
       </main>
     </div>
   );

@@ -111,29 +111,25 @@ export const getMyDonations = async (req, res) => {
 // @access  Private/Admin
 export const getDonations = async (req, res) => {
   try {
-    // 1. Get page and limit from the URL query (default to page 1, 10 items per page)
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    
-    // 2. Calculate how many items to skip
     const skip = (page - 1) * limit;
 
-    // 3. Count total documents so the frontend knows how many pages exist
-    const total = await Donation.countDocuments();
+    const search = req.query.search || '';
+    const query = search ? {
+      $or: [
+        { donorName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ]
+    } : {};
 
-    // 4. Fetch only the specific chunk of data
-    const donations = await Donation.find()
+    const total = await Donation.countDocuments(query);
+    const donations = await Donation.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    // 5. Send back the data PLUS the pagination math
-    res.status(200).json({
-      donations,
-      currentPage: page,
-      totalPages: Math.ceil(total / limit),
-      totalDonations: total
-    });
+    res.status(200).json({ donations, currentPage: page, totalPages: Math.ceil(total / limit), totalDonations: total });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch donations', error: error.message });
   }

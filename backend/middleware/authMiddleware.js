@@ -36,3 +36,18 @@ export const admin = (req, res, next) => {
     res.status(403).json({ message: 'Not authorized as an admin' });
   }
 };
+
+
+// This middleware allows us to pass in specific roles that are allowed to hit a route
+export const authorizeRoles = (...allowedRoles) => {
+  return (req, res, next) => {
+    // req.user should already be populated by 'protect/verifyToken' middleware
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        success: false, 
+        message: `Access Denied: Your role (${req.user?.role || 'Guest'}) cannot access this resource.` 
+      });
+    }
+    next(); // Role is authorized, move to the controller!
+  };
+};
