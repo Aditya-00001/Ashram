@@ -19,6 +19,11 @@ export default function UserDashboard() {
   const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [statusMsg, setStatusMsg] = useState(null);
 
+  // --- NEW: User Pujas State ---
+  const [myPujas, setMyPujas] = useState([]);
+  const [pujaPage, setPujaPage] = useState(1);
+  const [totalPujaPages, setTotalPujaPages] = useState(1);
+
   useEffect(() => {
     if (!user) navigate('/login');
   }, [user, navigate]);
@@ -39,6 +44,29 @@ export default function UserDashboard() {
     };
     fetchMyDonations();
   }, [user]);
+
+  // --- NEW: Fetch My Pujas ---
+  useEffect(() => {
+    const fetchPujas = async () => {
+      // Only fetch if they actually click the Pujas tab!
+      if (activeTab !== 'pujas' || !user) return; 
+      
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/pujas/my-pujas?page=${pujaPage}&limit=10`, {
+          headers: { 'Authorization': `Bearer ${user.token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setMyPujas(data.pujas);
+          setTotalPujaPages(data.totalPages);
+        }
+      } catch (err) {
+        console.error("Failed to fetch pujas", err);
+      }
+    };
+
+    fetchPujas();
+  }, [activeTab, pujaPage, user]); // Refetch if they change tabs or pages
 
   // --- SETTINGS HANDLERS ---
   const handleUpdateProfile = async (e) => {
@@ -177,6 +205,9 @@ export default function UserDashboard() {
           >
             ⚙️ Settings
           </button>
+          <button className={activeTab === 'pujas' ? 'active' : ''} onClick={() => setActiveTab('pujas')}>
+            🙏 My Booked Pujas
+          </button>
         </div>
 
         {/* --- TAB 1: OVERVIEW --- */}
@@ -294,6 +325,86 @@ export default function UserDashboard() {
               <button type="submit" className="cta-button outline-btn" style={{ borderColor: '#ff4757', color: '#ff4757' }}>Update Password</button>
             </form>
 
+          </div>
+        )}
+
+        {/* MY PUJAS TAB */}
+        {activeTab === 'pujas' && (
+          <div className="dashboard-card" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+            <h3>My Booked Pujas</h3>
+            <p style={{ color: '#ccc', marginBottom: '20px' }}>
+              Track the upcoming schedules for your sponsored Nitya Seva and special Pujas.
+            </p>
+
+            <div className="table-responsive">
+              <table className="history-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Puja Name</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {myPujas.length === 0 ? (
+                    <tr><td colSpan="4">You haven't booked any Pujas yet.</td></tr>
+                  ) : null}
+                  {myPujas.map(puja => {
+                    const isPast = new Date(puja.date) < new Date(new Date().setHours(0,0,0,0));
+                    return (
+                      <tr key={puja._id} style={{ opacity: isPast ? 0.6 : 1 }}>
+                        <td>{new Date(puja.date).toLocaleDateString()}</td>
+                        <td>
+                          {/* Re-using your AM/PM time formatter logic here */}
+                          {(() => {
+                            let [h, m] = puja.time.split(':');
+                            const ampm = h >= 12 ? 'PM' : 'AM';
+                            h = h % 12 || 12;
+                            return `${h}:${m} ${ampm}`;
+                          })()}
+                        </td>
+                        <td style={{ fontWeight: 'bold' }}>{puja.pujaName}</td>
+                        <td>
+                          <span style={{ 
+                            color: isPast ? '#888' : '#2ecc71',
+                            backgroundColor: isPast ? '#333' : 'rgba(46, 204, 113, 0.1)',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.85rem'
+                          }}>
+                            {isPast ? 'Completed' : 'Scheduled'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* PUJAS PAGINATION */}
+            {totalPujaPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '20px' }}>
+                <button 
+                  onClick={() => setPujaPage(prev => Math.max(prev - 1, 1))}
+                  disabled={pujaPage === 1}
+                  className="cta-button outline-btn"
+                  style={{ padding: '8px 16px', opacity: pujaPage === 1 ? 0.5 : 1, cursor: pujaPage === 1 ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}
+                >
+                  Previous
+                </button>
+                <span style={{ color: '#ccc' }}>Page {pujaPage} of {totalPujaPages}</span>
+                <button 
+                  onClick={() => setPujaPage(prev => Math.min(prev + 1, totalPujaPages))}
+                  disabled={pujaPage === totalPujaPages}
+                  className="cta-button outline-btn"
+                  style={{ padding: '8px 16px', opacity: pujaPage === totalPujaPages ? 0.5 : 1, cursor: pujaPage === totalPujaPages ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
 

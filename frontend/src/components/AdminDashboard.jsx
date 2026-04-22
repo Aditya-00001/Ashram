@@ -79,18 +79,55 @@ export default function AdminDashboard() {
 
   // --- NEW: Users State ---
   const [usersList, setUsersList] = useState([]);
-  const [userPage, setUserPage] = useState(1);         // Add this
-  const [totalUserPages, setTotalUserPages] = useState(1); // Add this
+  const [userPage, setUserPage] = useState(1);         
+  const [totalUserPages, setTotalUserPages] = useState(1); 
   
   // --- NEW: Search State ---
   const [searchInput, setSearchInput] = useState(''); // What the user types
   const [appliedSearch, setAppliedSearch] = useState(''); // What we actually send to the API
+
+  // --- NEW: Puja State ---
+  const [pujaList, setPujaList] = useState([]);
+  const [pujaPage, setPujaPage] = useState(1);         
+  const [totalPujaPages, setTotalPujaPages] = useState(1);
+  const [showPujaForm, setShowPujaForm] = useState(false);
+  const [pujaFormData, setPujaFormData] = useState({
+    pujaName: '', sponsorName: '', sponsorEmail: '', sponsorId: '', date: '', time: '' 
+  });
+  const [editingPujaId, setEditingPujaId] = useState(null);
   
+  // --- NEW: Dropdown Search State ---
+  const [sponsorSearchTerm, setSponsorSearchTerm] = useState('');
+  const [sponsorResults, setSponsorResults] = useState([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
   useEffect(() => {
     if (!user || user.role !== 'admin') {
       navigate('/admin-portal');
     }
   }, [user, navigate]);
+
+  // --- NEW: Live Search for Sponsor Dropdown ---
+  useEffect(() => {
+    if (!isDropdownOpen) return; // Don't search if the menu is closed
+
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        // We reuse the exact same user endpoint, asking for just 5 results!
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users?page=1&limit=5&search=${sponsorSearchTerm}`, {
+          headers: { 'Authorization': `Bearer ${user.token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSponsorResults(data.users);
+        }
+      } catch (err) {
+        console.error("Failed to search users:", err);
+      }
+    }, 300); // Wait 300ms after they stop typing to fire the fetch
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [sponsorSearchTerm, isDropdownOpen, user]);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') return;
@@ -142,10 +179,20 @@ export default function AdminDashboard() {
             setTotalUserPages(data.totalPages);
           }
         }
+        
+        else if (activeTab === 'pujas') {
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/pujas?page=${pujaPage}&limit=10&search=${appliedSearch}`, { headers });
+          if (res.ok) {
+            const data = await res.json();
+            // Extract the array and the page count
+            setPujaList(data.pujas);
+            setTotalPujaPages(data.totalPages);
+          }
+        }
       } catch (error) { console.error("Failed to fetch data:", error); }
     };
     fetchData();
-  }, [activeTab, user, donationPage, eventPage, messagePage, galleryPage, userPage, appliedSearch]);
+  }, [activeTab, user, donationPage, eventPage, messagePage, galleryPage, userPage, pujaPage, appliedSearch]);
   const handleFormChange = (e) => {
     setEventFormData({ ...eventFormData, [e.target.name]: e.target.value });
   };
@@ -285,6 +332,86 @@ export default function AdminDashboard() {
       console.error("Error updating role:", err);
     }
   };
+
+  // --- PUJA HANDLERS ---
+  const openEditPuja = (puja) => {
+    setPujaFormData({
+      pujaName: puja.pujaName,
+      sponsorName: puja.sponsorName,
+      // Safely grab the email if a user is linked!
+      sponsorEmail: puja.sponsorId ? puja.sponsorId.email : '', 
+      sponsorId: puja.sponsorId ? puja.sponsorId._id : '', // Store the ID for editing
+      date: parseDateToISO(puja.date),
+      time: puja.time
+    });
+    setEditingPujaId(puja._id);
+    setShowPujaForm(true);
+  };
+
+  const handleSelectSponsor = (selectedUser) => {
+    // Fill the form data with the exact database values
+    setPujaFormData({
+      ...pujaFormData,
+      sponsorName: selectedUser.name,
+      sponsorEmail: selectedUser.email,
+      sponsorId: selectedUser._id // We capture the ID directly!
+    });
+    setIsDropdownOpen(false); // Close the menu
+    setSponsorSearchTerm(''); // Clear the typing field
+  };
+
+  const handleSavePuja = async (e) => {
+    e.preventDefault();
+    const url = editingPujaId 
+      ? `${import.meta.env.VITE_API_URL}/api/pujas/${editingPujaId}` 
+      : `${import.meta.env.VITE_API_URL}/api/pujas`;
+    const method = editingPujaId ? 'PUT' : 'POST';
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}` 
+        },
+        body: JSON.stringify(pujaFormData)
+      });
+
+      if (res.ok) {
+        const savedPuja = await res.json();
+        
+        if (editingPujaId) {
+          // Update the list with the edited puja
+          setPujaList(pujaList.map(p => p._id === editingPujaId ? savedPuja : p).sort((a, b) => new Date(a.date) - new Date(b.date)));
+        } else {
+          // Add the new puja
+          setPujaList([...pujaList, savedPuja].sort((a, b) => new Date(a.date) - new Date(b.date)));
+        }
+        
+        setShowPujaForm(false);
+        setEditingPujaId(null);
+        setPujaFormData({ pujaName: '', sponsorName: '', sponsorEmail: '', date: '', time: '' });
+      } else {
+        // --- ADD THIS TO CATCH THE EMAIL ERROR ---
+        const errorData = await res.json();
+        alert(errorData.message); 
+      }
+    } catch (err) {
+      console.error("Failed to save puja:", err);
+    }
+  };
+
+  const handleDeletePuja = async (id) => {
+    if (window.confirm("Cancel this scheduled Puja?")) {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/pujas/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${user.token}` }
+      });
+      if (res.ok) setPujaList(pujaList.filter(p => p._id !== id));
+    }
+  };
+
+  
 
   const handleLogout = () => {
     logout();
@@ -476,7 +603,11 @@ export default function AdminDashboard() {
               setUserPage(1); // Reset page!
             }}>
             👥 Manage Users
-          </button>        
+          </button>  
+         
+          <button className={activeTab === 'pujas' ? 'active' : ''} onClick={() => { setActiveTab('pujas'); setShowPujaForm(false); }}>
+            🙏 Manage Pujas
+          </button>      
         </nav>
         <button className="logout-btn" onClick={handleLogout}>Logout</button>
       </aside>
@@ -934,6 +1065,185 @@ export default function AdminDashboard() {
                   disabled={userPage === totalUserPages}
                   className="cta-button outline-btn"
                   style={{ padding: '8px 16px', opacity: userPage === totalUserPages ? 0.5 : 1, cursor: userPage === totalUserPages ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        {/* PUJAS TAB */}
+        {activeTab === 'pujas' && (
+          <div className="admin-panel">
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3>{showPujaForm ? (editingPujaId ? 'Edit Scheduled Puja' : 'Schedule New Puja') : 'Puja Scheduling'}</h3>
+              {!showPujaForm && (
+                <button className="add-btn" onClick={() => {
+                  setPujaFormData({ pujaName: '', sponsorName: '', sponsorEmail: '', sponsorId: '', date: '', time: '' });
+                  setEditingPujaId(null);
+                  setShowPujaForm(true);
+                }}>+ Schedule New Puja</button>
+              )}
+            </div>
+            
+            {/* Hides the main search bar when the form is open */}
+            {!showPujaForm && renderSearchBar()} 
+
+            {showPujaForm ? (
+              <form className="admin-form" onSubmit={handleSavePuja}>
+                
+                {/* --- ROW 1: PUJA NAME & LIVE SEARCH DROPDOWN --- */}
+                <div className="form-row">
+                  <div className="input-group">
+                    <label>Puja Name</label>
+                    <input type="text" value={pujaFormData.pujaName} onChange={(e) => setPujaFormData({...pujaFormData, pujaName: e.target.value})} required placeholder="e.g. Hanuman Chalisa" />
+                  </div>
+
+                  {/* --- NEW: THE SEARCHABLE DROPDOWN --- */}
+                  <div className="input-group" style={{ position: 'relative' }}>
+                    <label>Select Sponsor (Search Database)</label>
+                    
+                    {/* If a sponsor is selected, show their info as a locked pill. If not, show the search bar. */}
+                    {pujaFormData.sponsorId ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#2ecc7122', border: '1px solid #2ecc71', padding: '10px', borderRadius: '4px', height: '40px' }}>
+                        <span style={{ color: '#2ecc71', fontWeight: 'bold' }}>✓ {pujaFormData.sponsorName}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => setPujaFormData({...pujaFormData, sponsorName: '', sponsorEmail: '', sponsorId: ''})}
+                          style={{ background: 'transparent', border: 'none', color: '#ff4757', cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                          ✕ Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <input 
+                          type="text" 
+                          value={sponsorSearchTerm} 
+                          onChange={(e) => { setSponsorSearchTerm(e.target.value); setIsDropdownOpen(true); }}
+                          onFocus={() => setIsDropdownOpen(true)}
+                          placeholder="Type name or email..." 
+                          required
+                          autoComplete="off"
+                        />
+                        
+                        {/* The Absolute Positioned Results Menu */}
+                        {isDropdownOpen && (
+                          <div style={{ position: 'absolute', top: '75px', left: 0, right: 0, backgroundColor: '#2a2a2a', border: '1px solid #444', borderRadius: '4px', zIndex: 10, maxHeight: '200px', overflowY: 'auto', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+                            
+                            <div style={{ padding: '8px', borderBottom: '1px solid #444', display: 'flex', justifyContent: 'flex-end' }}>
+                              <button type="button" onClick={() => setIsDropdownOpen(false)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}>Close</button>
+                            </div>
+
+                            {sponsorResults.length === 0 ? (
+                              <div style={{ padding: '12px', color: '#888', textAlign: 'center' }}>{sponsorSearchTerm ? 'No users found.' : 'Type to search...'}</div>
+                            ) : (
+                              sponsorResults.map(u => (
+                                <div 
+                                  key={u._id} 
+                                  onClick={() => handleSelectSponsor(u)}
+                                  style={{ padding: '12px', borderBottom: '1px solid #333', cursor: 'pointer', transition: 'background 0.2s' }}
+                                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#333'}
+                                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                  <strong style={{ color: '#e67e22', display: 'block' }}>{u.name}</strong>
+                                  <small style={{ color: '#ccc' }}>{u.email}</small>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* --- ROW 2: DATE & TIME --- */}
+                <div className="form-row">
+                  <div className="input-group">
+                    <label>Date</label>
+                    <input type="date" value={pujaFormData.date} onChange={(e) => setPujaFormData({...pujaFormData, date: e.target.value})} required />
+                  </div>
+                  <div className="input-group">
+                    <label>Time</label>
+                    <input type="time" value={pujaFormData.time} onChange={(e) => setPujaFormData({...pujaFormData, time: e.target.value})} required />
+                  </div>
+                </div>
+
+                <div className="form-actions">
+                  <button type="button" className="cancel-btn" onClick={() => setShowPujaForm(false)}>Cancel</button>
+                  <button type="submit" className="save-btn">Schedule Puja</button>
+                </div>
+              </form>
+            ) : (
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Time</th>
+                      <th>Puja Name</th>
+                      <th>Sponsor</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pujaList.length === 0 ? <tr><td colSpan="6">No Pujas scheduled.</td></tr> : null}
+                    {pujaList.map(puja => {
+                      // Highlight past pujas slightly differently
+                      const isPast = new Date(puja.date) < new Date(new Date().setHours(0,0,0,0));
+                      return (
+                        <tr key={puja._id} style={{ opacity: isPast ? 0.6 : 1 }}>
+                          <td>{new Date(puja.date).toLocaleDateString()}</td>
+                          <td>{parseTime24to12(puja.time)}</td>
+                          <td style={{ fontWeight: 'bold' }}>{puja.pujaName}</td>
+                          <td>
+                            {puja.sponsorName}
+                            <br/>
+                            <small style={{ color: '#888' }}>
+                              {puja.sponsorId ? puja.sponsorId.email : 'Not Linked'}
+                            </small>
+                          </td>
+                          <td>
+                            <span style={{ color: isPast ? '#888' : '#e67e22' }}>
+                              {isPast ? 'Completed' : 'Scheduled'}
+                            </span>
+                          </td>
+                          <td>
+                            <button className="edit-btn" onClick={() => openEditPuja(puja)} style={{ marginRight: '10px' }}>Edit</button>
+                            <button className="delete-btn" onClick={() => handleDeletePuja(puja._id)}>Cancel</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              
+            )}
+            
+            {/* PUJAS PAGINATION */}
+            {totalPujaPages > 1 && !showPujaForm && (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '20px' }}>
+                <button 
+                  onClick={() => setPujaPage(prev => Math.max(prev - 1, 1))}
+                  disabled={pujaPage === 1}
+                  className="cta-button outline-btn"
+                  style={{ padding: '8px 16px', opacity: pujaPage === 1 ? 0.5 : 1, cursor: pujaPage === 1 ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}
+                >
+                  Previous
+                </button>
+                
+                <span style={{ color: '#ccc' }}>
+                  Page {pujaPage} of {totalPujaPages}
+                </span>
+
+                <button 
+                  onClick={() => setPujaPage(prev => Math.min(prev + 1, totalPujaPages))}
+                  disabled={pujaPage === totalPujaPages}
+                  className="cta-button outline-btn"
+                  style={{ padding: '8px 16px', opacity: pujaPage === totalPujaPages ? 0.5 : 1, cursor: pujaPage === totalPujaPages ? 'not-allowed' : 'pointer', backgroundColor: 'transparent', color: '#e67e22', border: '1px solid #e67e22', borderRadius: '4px' }}
                 >
                   Next
                 </button>
