@@ -88,28 +88,38 @@ export const getUsers = async (req, res) => {
   }
 };
 
-// @desc    Update user role (Promote to Trustee/Admin or Demote to Member)
+// @desc    Update user role
 // @route   PUT /api/users/:id/role
-// @access  Private/Admin
+// @access  Private/Admin or Superadmin
 export const updateUserRole = async (req, res) => {
   try {
-    const { role } = req.body;
+    const { role: newRole } = req.body;
+    const currentUserRole = req.user.role; // The person making the request
     
-    // Ensure the role being assigned is valid
-    if (!['member', 'trustee', 'admin'].includes(role)) {
+    if (!['member', 'trustee', 'admin', 'superadmin'].includes(newRole)) {
       return res.status(400).json({ message: 'Invalid role provided' });
     }
 
-    const user = await User.findById(req.params.id);
+    const targetUser = await User.findById(req.params.id);
 
-    if (user) {
-      // Prevent an admin from accidentally demoting themselves and locking themselves out!
-      if (user._id.toString() === req.user._id.toString() && role !== 'admin') {
-         return res.status(400).json({ message: 'You cannot demote your own admin account.' });
+    if (targetUser) {
+      // RULE 1: Total Super Admin Protection
+      if (targetUser.role === 'superadmin' && currentUserRole !== 'superadmin') {
+        return res.status(403).json({ message: 'Access Denied: You cannot modify a Super Admin account.' });
       }
 
-      user.role = role;
-      const updatedUser = await user.save();
+      // RULE 2: Standard Admins cannot mint new Admins
+      if (currentUserRole === 'admin' && ['admin', 'superadmin'].includes(newRole)) {
+        return res.status(403).json({ message: 'Access Denied: Only Super Admins can assign Admin privileges.' });
+      }
+
+      // RULE 3: Anti-Lockout (A Super Admin cannot demote themselves)
+      if (targetUser._id.toString() === req.user._id.toString() && currentUserRole === 'superadmin' && newRole !== 'superadmin') {
+         return res.status(400).json({ message: 'Action Prevented: You cannot demote your own Super Admin account.' });
+      }
+
+      targetUser.role = newRole;
+      const updatedUser = await targetUser.save();
       
       res.json({
         _id: updatedUser._id,

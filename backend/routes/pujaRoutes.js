@@ -8,14 +8,14 @@ const router = express.Router();
 router.get('/public', getPublicPujas);
 
 // Protected Admin route to schedule a new one
-router.post('/', protect, authorizeRoles('admin'), createPuja);
+router.post('/', protect, authorizeRoles('admin', 'superadmin'), createPuja);
 
 // --- ADD THIS LINE HERE (Above the /:id routes) ---
 router.get('/my-pujas', protect, getMyPujas);
 
-router.get('/', protect, authorizeRoles('admin'), getAllPujas);
-router.delete('/:id', protect, authorizeRoles('admin'), deletePuja);
-router.put('/:id', protect, authorizeRoles('admin'), updatePuja);
+router.get('/', protect, authorizeRoles('admin', 'superadmin'), getAllPujas);
+router.delete('/:id', protect, authorizeRoles('admin', 'superadmin'), deletePuja);
+router.put('/:id', protect, authorizeRoles('admin', 'superadmin'), updatePuja);
 
 
 export default router;

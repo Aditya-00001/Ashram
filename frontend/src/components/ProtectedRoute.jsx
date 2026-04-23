@@ -10,9 +10,9 @@ export default function ProtectedRoute({ children, adminOnly = false }) {
     return <Navigate to="/login" replace />;
   }
 
-  // If this route requires Admin, but they are a normal user, kick them to their profile
-  if (adminOnly && user.role !== 'admin') {
-    return <Navigate to="/my-profile" replace />;
+  // --- UPDATED: Allow both roles through the 'adminOnly' gate ---
+  if (adminOnly && user.role !== 'admin' && user.role !== 'trustee' && user.role !== 'superadmin') {
+    return <Navigate to="/" replace />;
   }
 
   // If they pass the checks, render the page!

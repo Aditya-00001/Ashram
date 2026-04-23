@@ -4,7 +4,12 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['member', 'trustee', 'admin'], default: 'member' },
+  role: {
+    type: String,
+    // --- UPDATED: Add 'superadmin' to the list ---
+    enum: ['member', 'trustee', 'admin', 'superadmin'], 
+    default: 'member',
+  },
   
   // --- NEW FIELDS FOR AUTHENTICATION ---
   isVerified: { type: Boolean, default: false }, // Tracks if email is verified

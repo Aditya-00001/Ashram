@@ -38,7 +38,7 @@ export default function AdminDashboard() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('events');
+  const [activeTab, setActiveTab] = useState('analytics');
   
   const [events, setEvents] = useState([]);
   const [donations, setDonations] = useState([]);
@@ -101,8 +101,14 @@ export default function AdminDashboard() {
   const [sponsorResults, setSponsorResults] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+
+  // const [activeTab, setActiveTab] = useState('analytics'); // Make this the default!
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+
   useEffect(() => {
-    if (!user || user.role !== 'admin') {
+    // --- UPDATED: Allow both roles to stay on the page ---
+    if (!user || !['admin', 'trustee','superadmin'].includes(user.role)) {
       navigate('/admin-portal');
     }
   }, [user, navigate]);
@@ -130,12 +136,24 @@ export default function AdminDashboard() {
   }, [sponsorSearchTerm, isDropdownOpen, user]);
 
   useEffect(() => {
-    if (!user || user.role !== 'admin') return;
+    // --- UPDATED: Allow both roles to render the HTML ---
+    if (!user || !['admin', 'trustee','superadmin'].includes(user.role)) return null;
 
     const fetchData = async () => {
       const headers = { 'Authorization': `Bearer ${user.token}` };
       try {
-        if (activeTab === 'events') {
+
+        if (activeTab === 'analytics') {
+          setIsLoadingAnalytics(true);
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/analytics`, { headers });
+          if (res.ok) {
+            const data = await res.json();
+            setAnalyticsData(data);
+          }
+          setIsLoadingAnalytics(false);
+        }
+
+        else if (activeTab === 'events') {
           const res = await fetch(`${import.meta.env.VITE_API_URL}/api/events?page=${eventPage}&limit=10&search=${appliedSearch}`);
           // --- FIX: Extract the array and the page count ---
           if (res.ok) {
@@ -471,7 +489,7 @@ export default function AdminDashboard() {
   };
 
 
-  if (!user || user.role !== 'admin') return null;
+  if (!user || !['admin', 'trustee','superadmin'].includes(user.role)) return null;
 
  
   // --- NEWSLETTER HANDLER ---
@@ -577,6 +595,12 @@ export default function AdminDashboard() {
       <aside className="admin-sidebar">
         <h2>Admin Panel</h2>
         <nav className="admin-nav">
+          <button className={activeTab === 'analytics' ? 'active' : ''} onClick={() => setActiveTab('analytics')}>
+            📊 Overview & Stats
+          </button>
+          {/* ONLY ADMINS see these tabs! */}
+          {(user.role === 'admin' || user.role === 'superadmin') && (
+            <>
           <button className={activeTab === 'events' ? 'active' : ''} onClick={() => { setActiveTab('events'); setShowEventForm(false); }}>📅 Manage Events</button>
           <button className={activeTab === 'donations' ? 'active' : ''} 
           onClick={() => { 
@@ -607,13 +631,60 @@ export default function AdminDashboard() {
          
           <button className={activeTab === 'pujas' ? 'active' : ''} onClick={() => { setActiveTab('pujas'); setShowPujaForm(false); }}>
             🙏 Manage Pujas
-          </button>      
+          </button>
+          </>
+        )}      
         </nav>
         <button className="logout-btn" onClick={handleLogout}>Logout</button>
       </aside>
 
       <main className="admin-content">
-        
+
+        {/* ANALYTICS TAB */}
+        {activeTab === 'analytics' && (
+          <div className="admin-panel">
+            <h3 style={{ marginBottom: '20px' }}>Ashram Overview</h3>
+            
+            {isLoadingAnalytics || !analyticsData ? (
+              <p style={{ color: '#888' }}>Calculating statistics...</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                
+                {/* Financial Cards */}
+                <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #2ecc71', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
+                  <h4 style={{ color: '#888', textTransform: 'uppercase', fontSize: '0.85rem', margin: '0 0 10px 0' }}>Total Donations</h4>
+                  <h2 style={{ color: '#2ecc71', margin: 0, fontSize: '2rem' }}>₹{analyticsData.totalDonations.toLocaleString('en-IN')}</h2>
+                </div>
+
+                <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #3498db', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
+                  <h4 style={{ color: '#888', textTransform: 'uppercase', fontSize: '0.85rem', margin: '0 0 10px 0' }}>Collected This Month</h4>
+                  <h2 style={{ color: '#3498db', margin: 0, fontSize: '2rem' }}>₹{analyticsData.monthlyCollection.toLocaleString('en-IN')}</h2>
+                </div>
+
+                <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #f1c40f', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
+                  <h4 style={{ color: '#888', textTransform: 'uppercase', fontSize: '0.85rem', margin: '0 0 10px 0' }}>Pending Payments</h4>
+                  <h2 style={{ color: '#f1c40f', margin: 0, fontSize: '2rem' }}>₹{analyticsData.pendingAmount.toLocaleString('en-IN')}</h2>
+                  <small style={{ color: '#888' }}>{analyticsData.pendingCount} unverified transactions</small>
+                </div>
+
+                {/* Community Cards */}
+                <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #9b59b6', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
+                  <h4 style={{ color: '#888', textTransform: 'uppercase', fontSize: '0.85rem', margin: '0 0 10px 0' }}>Verified Members</h4>
+                  <h2 style={{ color: '#9b59b6', margin: 0, fontSize: '2rem' }}>{analyticsData.totalMembers.toLocaleString('en-IN')}</h2>
+                </div>
+
+                <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #e67e22', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
+                  <h4 style={{ color: '#888', textTransform: 'uppercase', fontSize: '0.85rem', margin: '0 0 10px 0' }}>Upcoming Pujas</h4>
+                  <h2 style={{ color: '#e67e22', margin: 0, fontSize: '2rem' }}>{analyticsData.upcomingPujas}</h2>
+                  <small style={{ color: '#888' }}>Scheduled events</small>
+                </div>
+
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Event TAB */}
         {activeTab === 'events' && (
           <div className="admin-panel">
             <div className="panel-header">
@@ -1024,19 +1095,23 @@ export default function AdminDashboard() {
                         <select 
                           value={u.role} 
                           onChange={(e) => handleRoleChange(u._id, e.target.value)}
-                          disabled={u._id === user._id} // You can't change your own role here!
+                          // Disable if it's their own account, OR if a standard admin is looking at a superadmin
+                          disabled={u._id === user._id || (user.role === 'admin' && u.role === 'superadmin')} 
                           style={{
                             padding: '6px',
                             backgroundColor: '#1a1a1a',
                             color: '#fff',
                             border: '1px solid #444',
                             borderRadius: '4px',
-                            cursor: u._id === user._id ? 'not-allowed' : 'pointer'
+                            cursor: (u._id === user._id || (user.role === 'admin' && u.role === 'superadmin')) ? 'not-allowed' : 'pointer'
                           }}
                         >
                           <option value="member">Member</option>
                           <option value="trustee">Trustee</option>
-                          <option value="admin">Admin</option>
+                          
+                          {/* ONLY Super Admins can see or assign the Admin roles in the UI */}
+                          {user.role === 'superadmin' && <option value="admin">Admin</option>}
+                          {/* {user.role === 'superadmin' && <option value="superadmin">Super Admin</option>} */}
                         </select>
                       </td>
                     </tr>

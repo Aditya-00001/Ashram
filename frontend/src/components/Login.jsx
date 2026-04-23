@@ -18,8 +18,8 @@ export default function Login() {
     const result = await login(email, password);
     
     if (result.success) {
-        if (result.role === 'admin') {
-          // Bypass the secret portal and send them straight to the Dashboard!
+        // --- UPDATED: Allow both Admins AND Trustees into the Dashboard! ---
+        if (result.role === 'admin' || result.role === 'trustee' || result.role === 'superadmin') {
           navigate('/admin/dashboard'); 
         } else {
           navigate('/my-profile');

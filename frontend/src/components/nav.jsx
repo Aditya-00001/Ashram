@@ -79,11 +79,11 @@ export default function Nav() {
           {user ? (
             <>
               <NavLink 
-                to={user.role === 'admin' ? '/admin/dashboard' : '/my-profile'} 
+                to={(user.role === 'admin' || user.role === 'superadmin') ? '/admin/dashboard' : '/my-profile'} 
                 className={({ isActive }) => isActive ? "hidden-link" : "nav-item"} 
                 onClick={closeMenu}
               >
-                {user.role === 'admin' ? 'Admin Panel' : 'My Profile'}
+                {(user.role === 'admin' || user.role === 'superadmin') ? 'Admin Panel' : 'My Profile'}
               </NavLink>
               <button 
                 className="nav-item" 

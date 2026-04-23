@@ -12,6 +12,8 @@ import galleryRoutes from './routes/galleryRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import pujaRoutes from './routes/pujaRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
+
 import morgan from 'morgan';
 import logger from './utils/logger.js';
 
@@ -80,6 +82,7 @@ app.use('/api/gallery', galleryRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/pujas', pujaRoutes);
+app.use('/api/analytics', analyticsRoutes);
 // --- BASE ROUTE (Health Check) ---
 app.get('/', (req, res) => {
   res.send('🙏 Achyuta Ananta Ashram API is running smoothly...');
