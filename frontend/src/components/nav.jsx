@@ -18,6 +18,7 @@ import ResetPassword from './ResetPassword.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
 import ProtectedRoute from './ProtectedRoute';
 import Privacy from './Privacy';
+import FaqAccordion from './FaqAccordion.jsx';
 
 export default function Nav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -119,6 +120,7 @@ export default function Nav() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:resetToken" element={<ResetPassword />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/faq" element={<FaqAccordion />} />
       </Routes>
     </>
   );

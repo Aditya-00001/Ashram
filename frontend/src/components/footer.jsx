@@ -19,8 +19,8 @@ export default function Footer() {
         <div className="footer-section links">
           <h4>Explore</h4>
           <Link to="/about">About Us</Link>
-          {/* <Link to="/event">Daily Schedule</Link> */}
           <Link to="/events">Events</Link>
+          <Link to="/faq">FAQs</Link>
         </div>
 
         <div className="footer-section contact">

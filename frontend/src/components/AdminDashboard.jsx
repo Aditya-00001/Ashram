@@ -102,9 +102,17 @@ export default function AdminDashboard() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
 
-  // const [activeTab, setActiveTab] = useState('analytics'); // Make this the default!
+  // const [activeTab, setActiveTab] = useState('analytics'); // this is default!
   const [analyticsData, setAnalyticsData] = useState(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+
+  // --- NEW: FAQ State ---
+  const [faqList, setFaqList] = useState([]);
+  const [showFaqForm, setShowFaqForm] = useState(false);
+  const [editingFaqId, setEditingFaqId] = useState(null);
+  const [faqFormData, setFaqFormData] = useState({
+    question: '', answer: '', category: 'General', isActive: true
+  });
 
   useEffect(() => {
     // --- UPDATED: Allow both roles to stay on the page ---
@@ -207,6 +215,13 @@ export default function AdminDashboard() {
             setTotalPujaPages(data.totalPages);
           }
         }
+
+        else if (activeTab === 'faqs') {
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/faqs`, { headers });
+          if (res.ok) setFaqList(await res.json());
+        }
+
+
       } catch (error) { console.error("Failed to fetch data:", error); }
     };
     fetchData();
@@ -631,6 +646,9 @@ export default function AdminDashboard() {
          
           <button className={activeTab === 'pujas' ? 'active' : ''} onClick={() => { setActiveTab('pujas'); setShowPujaForm(false); }}>
             🙏 Manage Pujas
+          </button>
+          <button className={activeTab === 'faqs' ? 'active' : ''} onClick={() => { setActiveTab('faqs'); setShowFaqForm(false); }}>
+            ❓ FAQs
           </button>
           </>
         )}      
@@ -1322,6 +1340,97 @@ export default function AdminDashboard() {
                 >
                   Next
                 </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* FAQS TAB */}
+        {activeTab === 'faqs' && (
+          <div className="admin-panel">
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3>Manage FAQs</h3>
+              {!showFaqForm && (user.role === 'admin' || user.role === 'superadmin') && (
+                <button className="add-btn" onClick={() => {
+                  setFaqFormData({ question: '', answer: '', category: 'General', isActive: true });
+                  setEditingFaqId(null);
+                  setShowFaqForm(true);
+                }}>+ Add New FAQ</button>
+              )}
+            </div>
+
+            {showFaqForm ? (
+              <form className="admin-form" onSubmit={async (e) => {
+                e.preventDefault();
+                const url = editingFaqId ? `${import.meta.env.VITE_API_URL}/api/faqs/${editingFaqId}` : `${import.meta.env.VITE_API_URL}/api/faqs`;
+                const method = editingFaqId ? 'PUT' : 'POST';
+                const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` }, body: JSON.stringify(faqFormData) });
+                if (res.ok) {
+                  const savedFaq = await res.json();
+                  setFaqList(editingFaqId ? faqList.map(f => f._id === editingFaqId ? savedFaq : f) : [...faqList, savedFaq]);
+                  setShowFaqForm(false);
+                }
+              }}>
+                <div className="input-group">
+                  <label>Question</label>
+                  <input type="text" value={faqFormData.question} onChange={(e) => setFaqFormData({...faqFormData, question: e.target.value})} required />
+                </div>
+                <div className="input-group">
+                  <label>Answer</label>
+                  <textarea rows="4" value={faqFormData.answer} onChange={(e) => setFaqFormData({...faqFormData, answer: e.target.value})} required></textarea>
+                </div>
+                <div className="form-row">
+                  <div className="input-group">
+                    <label>Category</label>
+                    <select value={faqFormData.category} onChange={(e) => setFaqFormData({...faqFormData, category: e.target.value})}>
+                      <option value="General">General</option>
+                      <option value="Donations">Donations</option>
+                      <option value="Pujas & Events">Pujas & Events</option>
+                      <option value="Technical">Technical</option>
+                    </select>
+                  </div>
+                  <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '25px' }}>
+                    <input type="checkbox" checked={faqFormData.isActive} onChange={(e) => setFaqFormData({...faqFormData, isActive: e.target.checked})} style={{ width: '20px', height: '20px' }} />
+                    <label style={{ margin: 0 }}>Active (Visible to Public)</label>
+                  </div>
+                </div>
+                <div className="form-actions">
+                  <button type="button" className="cancel-btn" onClick={() => setShowFaqForm(false)}>Cancel</button>
+                  <button type="submit" className="save-btn">Save FAQ</button>
+                </div>
+              </form>
+            ) : (
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th>Question</th>
+                      <th>Status</th>
+                      {(user.role === 'admin' || user.role === 'superadmin') && <th>Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {faqList.map(faq => (
+                      <tr key={faq._id} style={{ opacity: faq.isActive ? 1 : 0.6 }}>
+                        <td><span style={{ backgroundColor: '#333', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{faq.category}</span></td>
+                        <td style={{ fontWeight: 'bold' }}>{faq.question}</td>
+                        <td>{faq.isActive ? <span style={{color: '#2ecc71'}}>Active</span> : <span style={{color: '#888'}}>Draft</span>}</td>
+                        {(user.role === 'admin' || user.role === 'superadmin') && (
+                          <td>
+                            <button className="edit-btn" onClick={() => { setFaqFormData(faq); setEditingFaqId(faq._id); setShowFaqForm(true); }} style={{ marginRight: '10px' }}>Edit</button>
+                            <button className="delete-btn" onClick={async () => {
+                              if(window.confirm('Delete this FAQ?')) {
+                                await fetch(`${import.meta.env.VITE_API_URL}/api/faqs/${faq._id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${user.token}` }});
+                                setFaqList(faqList.filter(f => f._id !== faq._id));
+                              }
+                            }}>Delete</button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
