@@ -19,6 +19,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 import ProtectedRoute from './ProtectedRoute';
 import Privacy from './Privacy';
 import FaqAccordion from './FaqAccordion.jsx';
+import Chat from './Chat';
 
 export default function Nav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -75,7 +76,7 @@ export default function Nav() {
           <NavLink to="/gallery" className={({ isActive }) => isActive ? "hidden-link" : "nav-item"} onClick={closeMenu}>Gallery</NavLink>
           <NavLink to="/book" className={({ isActive }) => isActive ? "hidden-link" : "nav-item"} onClick={closeMenu}>Books</NavLink>
           <NavLink to="/contact" className={({ isActive }) => isActive ? "hidden-link" : "nav-item"} onClick={closeMenu}>Contact</NavLink>
-          
+          <NavLink to="/chat" className={({ isActive }) => isActive ? "active-link" : "nav-item"} onClick={closeMenu}>Community Chat</NavLink>
           {/* Auth Controls */}
           {user ? (
             <>
@@ -121,6 +122,7 @@ export default function Nav() {
         <Route path="/reset-password/:resetToken" element={<ResetPassword />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/faq" element={<FaqAccordion />} />
+        <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       </Routes>
     </>
   );

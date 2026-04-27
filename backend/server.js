@@ -3,6 +3,11 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+
+// --- NEW: WebSockets Imports ---
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+
 // --- ROUTE IMPORTS ---
 import authRoutes from './routes/authRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
@@ -14,6 +19,7 @@ import userRoutes from './routes/userRoutes.js';
 import pujaRoutes from './routes/pujaRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import faqRoutes from './routes/faqRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 
 import morgan from 'morgan';
 import logger from './utils/logger.js';
@@ -23,6 +29,17 @@ dotenv.config();
 
 // Initialize Express
 const app = express();
+
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: ['http://localhost:5173', process.env.FRONTEND_URL],
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
+
+
 app.set('trust proxy', 1);
 // 2. Create the limiters BEFORE your routes
 // General API Limiter: 100 requests per 15 minutes per IP
@@ -85,13 +102,41 @@ app.use('/api/users', userRoutes);
 app.use('/api/pujas', pujaRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/faqs', faqRoutes);
+app.use('/api/chat', chatRoutes);
 // --- BASE ROUTE (Health Check) ---
 app.get('/', (req, res) => {
   res.send('🙏 Achyuta Ananta Ashram API is running smoothly...');
 });
 
-// --- START SERVER ---
+// // --- START SERVER ---
+// const PORT = process.env.PORT || 5000;
+// app.listen(PORT, () => {
+//   console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+// });
+
+// --- NEW: Socket.io Connection Logic ---
+io.on('connection', (socket) => {
+  console.log(`🔌 A user connected: ${socket.id}`);
+
+  // When a user opens a specific chat, they join a "room" using the Conversation ID
+  socket.on('join_chat', (conversationId) => {
+    socket.join(conversationId);
+    console.log(`User joined room: ${conversationId}`);
+  });
+
+  // When a user sends a message, broadcast it to everyone in that specific room
+  socket.on('send_message', (data) => {
+    // data should contain { conversationId, senderId, text, createdAt, etc. }
+    io.to(data.conversationId).emit('receive_message', data);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 User disconnected: ${socket.id}`);
+  });
+});
+
+// --- UPDATED: Make sure httpServer is listening, NOT app! ---
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });

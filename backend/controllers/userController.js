@@ -134,3 +134,19 @@ export const updateUserRole = async (req, res) => {
     res.status(500).json({ message: 'Server error updating role' });
   }
 };
+
+// @desc    Get public user directory for Chat
+// @route   GET /api/users/directory
+// @access  Private (All logged-in members)
+export const getUserDirectory = async (req, res) => {
+  try {
+    // Return all users EXCEPT the currently logged-in user
+    // Only send back the _id, name, and role. NEVER send passwords or email here.
+    const users = await User.find({ _id: { $ne: req.user._id }, isVerified: true })
+                            .select('_id name role');
+    
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching directory' });
+  }
+};
