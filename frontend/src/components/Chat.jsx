@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import EmojiPicker from 'emoji-picker-react';
 import io from 'socket.io-client';
 import './Chat.css';
 
@@ -27,6 +28,9 @@ export default function Chat() {
   // --- REFS ---
   const socketRef = useRef();
   const messagesEndRef = useRef(null);
+
+  // --- EMOJI STATE ---
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // --- 1. INITIALIZE SOCKET & FETCH INBOX ---
   useEffect(() => {
@@ -95,6 +99,12 @@ export default function Chat() {
     setMessagePage(1);
   };
 
+  // --- EMOJI HANDLER ---
+  const onEmojiClick = (emojiObject) => {
+    // Appends the emoji to the current message
+    setNewMessage(prev => prev + emojiObject.emoji);
+  };
+
   // --- 4. SEND MESSAGE ---
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -128,6 +138,7 @@ export default function Chat() {
 
         socketRef.current.emit('send_message', savedMessage);
         setNewMessage('');
+        setShowEmojiPicker(false); // Close picker on send
       }
     } catch (err) {
       console.error("Failed to send message", err);
@@ -195,7 +206,7 @@ export default function Chat() {
   if (!user) return <div style={{textAlign: 'center', padding: '50px'}}>Please log in to access Community Chat.</div>;
 
   return (
-    <div className="chat-container">
+    <div className={`chat-container ${activeChat ? 'mobile-chat-open' : ''}`}>
       {/* LEFT SIDEBAR: INBOX */}
       {/* --- NEW: LARGE GROUP CREATION MODAL --- */}
       {showGroupModal && (
@@ -326,12 +337,20 @@ export default function Chat() {
         {activeChat ? (
           <>
             <div className="chat-header">
-              <h3>
-                {activeChat.isGroup 
-                  ? activeChat.groupName 
-                  : activeChat.participants.find(p => p._id !== user._id)?.name}
-              </h3>
-              {/* --- NEW: CLOSE CHAT BUTTON --- */}
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                {/* --- NEW: MOBILE BACK BUTTON --- */}
+                <button className="mobile-back-btn" onClick={handleCloseChat}>
+                  ← Back
+                </button>
+                
+                <h3>
+                  {activeChat.isGroup 
+                    ? activeChat.groupName 
+                    : activeChat.participants.find(p => p._id !== user._id)?.name}
+                </h3>
+              </div>
+              
+              {/* Your existing close button */}
               <button className="close-chat-btn" onClick={handleCloseChat}>✕</button>
             </div>
             
@@ -371,22 +390,54 @@ export default function Chat() {
             </div>
 
             <form className="chat-input-area" onSubmit={handleSendMessage}>
-              <textarea 
-                value={newMessage} 
-                onChange={(e) => setNewMessage(e.target.value)} 
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey) {
-                    e.preventDefault(); 
-                    handleSendMessage(e);
-                  }
-                  if (e.key === 'Enter' && e.ctrlKey) {
-                    setNewMessage(prev => prev + '\n');
-                  }
-                }}
-                placeholder="Type a message... (Enter to send, Ctrl+Enter for new line)" 
-                required
-                rows="1"
-              />
+              
+              {/* Container for the input and emoji button */}
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, gap: '10px' }}>
+                
+                {/* --- NEW: THE EMOJI PICKER POPUP --- */}
+                {showEmojiPicker && (
+                  <div style={{ position: 'absolute', bottom: '100%', left: 0, zIndex: 50, marginBottom: '15px', boxShadow: '0 5px 15px rgba(0,0,0,0.5)' }}>
+                    <EmojiPicker 
+                      onEmojiClick={onEmojiClick} 
+                      theme="dark" // Matches our Ashram dark UI perfectly
+                      searchDisabled={false}
+                      skinTonesDisabled={true} // Keeps the UI cleaner
+                      height={350} 
+                      width={300}
+                    />
+                  </div>
+                )}
+
+                {/* --- NEW: EMOJI TOGGLE BUTTON --- */}
+                <button 
+                  type="button" 
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', padding: '0 5px', color: '#888', transition: 'color 0.2s' }}
+                  onMouseOver={(e) => e.currentTarget.style.color = '#e67e22'}
+                  onMouseOut={(e) => e.currentTarget.style.color = '#888'}
+                  title="Add Emoji"
+                >
+                  😀
+                </button>
+
+                <textarea 
+                  value={newMessage} 
+                  onChange={(e) => setNewMessage(e.target.value)} 
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey) {
+                      e.preventDefault(); 
+                      handleSendMessage(e);
+                    }
+                    if (e.key === 'Enter' && e.ctrlKey) {
+                      setNewMessage(prev => prev + '\n');
+                    }
+                  }}
+                  placeholder="Type a message... (Enter to send, Ctrl+Enter for new line)" 
+                  required
+                  rows="1"
+                />
+              </div>
+
               <button type="submit" className="send-btn">Send</button>
             </form>
           </>

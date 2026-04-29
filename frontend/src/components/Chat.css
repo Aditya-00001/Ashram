@@ -179,6 +179,7 @@
   background-color: #e67e22;
   color: white; border: none; border-radius: 25px;
   font-weight: bold; cursor: pointer;
+  flex-shrink: 0;
 }
 .send-btn:hover { background-color: #d35400; }
 
@@ -280,4 +281,83 @@
 .load-more-btn:hover {
   background-color: #e67e22;
   color: white;
+}
+
+/* --- HIDE MOBILE BACK BUTTON ON DESKTOP --- */
+.mobile-back-btn {
+  display: none;
+}
+
+/* =========================================
+   📱 MOBILE RESPONSIVENESS (Max 768px)
+========================================= */
+@media (max-width: 768px) {
+  .chat-container {
+    height: calc(100vh - 120px); /* Fill screen better on mobile */
+    margin: 10px;
+    border-radius: 8px;
+  }
+
+  /* 1. Default Mobile View: Show Inbox ONLY */
+  .chat-sidebar {
+    width: 100%;
+    display: flex; /* Sidebar is visible */
+  }
+  
+  .chat-main {
+    display: none; /* Hide chat area by default */
+    width: 100%;
+  }
+
+  /* 2. Active Chat Mobile View: Show Chat Area ONLY */
+  .chat-container.mobile-chat-open .chat-sidebar {
+    display: none; /* Hide inbox */
+  }
+  
+  .chat-container.mobile-chat-open .chat-main {
+    display: flex; /* Show chat area */
+  }
+
+  /* 3. Show the Back Button */
+  .mobile-back-btn {
+    display: inline-block;
+    background: none;
+    border: none;
+    color: #e67e22;
+    font-size: 1rem;
+    font-weight: bold;
+    margin-right: 15px;
+    cursor: pointer;
+  }
+
+  /* 4. Fix Emoji Picker Overflow */
+  aside.EmojiPickerReact.epr-dark-theme {
+    width: 100% !important; /* Prevents it from bleeding off the screen */
+    height: 300px !important;
+  }
+
+  /* 5. Adjust Header padding for smaller screens */
+  .chat-header {
+    padding: 15px;
+  }
+
+  /* 6. Adjust message bubble size */
+  .message-bubble {
+    max-width: 85%; /* Let messages take up more room on tiny screens */
+  }
+  /* Add this inside your @media (max-width: 768px) block */
+  
+  .chat-input-area {
+    padding: 10px; /* Reduce the outer padding from 20px */
+    gap: 5px; /* Bring the button closer to the input */
+  }
+
+  .chat-input-area textarea {
+    padding: 10px; /* Slightly tighter text padding inside the box */
+  }
+
+  .send-btn {
+    padding: 0 15px; /* Thinner button for mobile */
+    font-size: 0.9rem;
+  }
 }
