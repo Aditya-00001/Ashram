@@ -169,6 +169,10 @@
   font-family: inherit;
   font-size: 1rem;
   overflow-y: auto;
+
+  /* --- CRITICAL FIX FOR MOBILE SQUEEZE --- */
+  min-width: 0; 
+  width: 100%;
 }
 
 .chat-input-area textarea:focus { 
@@ -347,17 +351,26 @@
   }
   /* Add this inside your @media (max-width: 768px) block */
   
+  /* Inside your @media (max-width: 768px) block */
+  
   .chat-input-area {
-    padding: 10px; /* Reduce the outer padding from 20px */
-    gap: 5px; /* Bring the button closer to the input */
+    padding: 8px; /* Tighter padding */
+    gap: 5px; /* Tighter gap between the input wrapper and the Send button */
+  }
+
+  .chat-input-area > div {
+    /* This targets the new div wrapper we added for the emoji picker */
+    gap: 5px !important; 
+    min-width: 0; /* Forces the wrapper to shrink */
   }
 
   .chat-input-area textarea {
-    padding: 10px; /* Slightly tighter text padding inside the box */
+    padding: 10px; 
   }
 
   .send-btn {
-    padding: 0 15px; /* Thinner button for mobile */
+    padding: 0 12px; /* Thinner button for tiny screens */
     font-size: 0.9rem;
+    flex-shrink: 0; /* Ensures the button never gets squished */
   }
 }

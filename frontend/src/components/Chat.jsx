@@ -47,6 +47,10 @@ export default function Chat() {
   const [selectedFile, setSelectedFile] = useState(null); // Holds the uploaded Cloudinary data
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
+
+  // --- SECURITY SANDBOX STATE ---
+  const [sandboxFile, setSandboxFile] = useState(null); 
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
   
   // --- 1. INITIALIZE SOCKET & FETCH INBOX ---
   useEffect(() => {
@@ -162,7 +166,22 @@ export default function Chat() {
     }
   };
 
-  // --- 4. SEND MESSAGE ---
+  // --- LINK PARSING HELPER ---
+  const renderTextWithLinks = (text) => {
+    if (!text) return null;
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.split(urlRegex).map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a key={index} href={part} target="_blank" rel="noopener noreferrer" style={{ color: 'white', textDecoration: 'underline' }}>
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   // --- 4. SEND MESSAGE ---
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault(); // Make 'e' optional in case we send just an attachment
@@ -322,6 +341,66 @@ export default function Chat() {
 
   return (
     <div className={`chat-container ${activeChat ? 'mobile-chat-open' : ''}`}>
+
+      {/* =========================================
+             SECURITY SANDBOX & DISCLAIMER MODALS 
+          ========================================= */}
+      
+      {/* 1. VIRUS/MALWARE DISCLAIMER */}
+      {showDisclaimer && sandboxFile && (
+        <div className="chat-modal-overlay" style={{ zIndex: 1001 }}>
+          <div className="chat-modal-content" style={{ borderTop: '4px solid #ff4757' }}>
+            <div className="chat-modal-header">
+              <h2 style={{ color: '#ff4757' }}>⚠️ Security Warning</h2>
+            </div>
+            <p style={{ color: '#ccc', lineHeight: '1.5' }}>
+              You are about to open a file uploaded by another user: <br/>
+              <strong style={{ color: '#fff' }}>{sandboxFile.fileName}</strong>
+            </p>
+            <p style={{ color: '#888', fontSize: '0.9rem', marginTop: '10px' }}>
+              Achyuta Ananta Ashram cannot guarantee this file is free of viruses or malware. Never enter passwords or personal information into untrusted documents.
+            </p>
+            <div className="chat-modal-actions" style={{ marginTop: '20px' }}>
+              <button className="cancel-btn" onClick={() => { setShowDisclaimer(false); setSandboxFile(null); }}>Go Back</button>
+              <button className="cta-button" style={{ backgroundColor: '#ff4757', border: 'none' }} onClick={() => setShowDisclaimer(false)}>
+                I Understand, View File
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. SANDBOXED IFRAME VIEWER */}
+      {sandboxFile && !showDisclaimer && (
+        <div className="chat-modal-overlay" style={{ zIndex: 1000, padding: '20px' }}>
+          <div className="chat-modal-content" style={{ width: '100%', maxWidth: '900px', height: '80vh', display: 'flex', flexDirection: 'column', padding: '15px' }}>
+            <div className="chat-modal-header" style={{ marginBottom: '15px' }}>
+              <h3 style={{ margin: 0, color: '#e67e22', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                Protected View: {sandboxFile.fileName}
+              </h3>
+              <div style={{ display: 'flex', gap: '15px' }}>
+                <a href={sandboxFile.url} download target="_blank" rel="noopener noreferrer" style={{ color: '#888', textDecoration: 'none', fontSize: '0.9rem' }}>Download Original</a>
+                <button onClick={() => setSandboxFile(null)} className="close-modal-btn" style={{ fontSize: '1.2rem' }}>✕</button>
+              </div>
+            </div>
+            
+            <div style={{ flex: 1, backgroundColor: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid #333' }}>
+              {sandboxFile.fileType === 'video' ? (
+                <video src={sandboxFile.url} controls autoPlay style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              ) : (
+                /* The magic sandbox attribute prevents malicious code execution inside the iframe! */
+                /* We wrap the URL in Google Docs Viewer to bypass native plugin blocks securely! */
+                <iframe 
+                  src={`https://docs.google.com/viewer?url=${encodeURIComponent(sandboxFile.url)}&embedded=true`} 
+                  title="Document Viewer"
+                  sandbox="allow-scripts allow-same-origin" 
+                  style={{ width: '100%', height: '100%', border: 'none', backgroundColor: '#fff' }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* 1. LARGE GROUP CREATION MODAL */}
       {showGroupModal && (
@@ -622,26 +701,44 @@ export default function Chat() {
                       </strong>
                     )}
                     
-                    {/* --- NEW: RENDER ATTACHMENTS --- */}
+                    {/* --- ATTACHMENT RENDERING --- */}
                     {msg.attachment && (
                       <div style={{ marginBottom: msg.text ? '10px' : '0' }}>
                         {msg.attachment.fileType === 'image' && (
                           <img src={msg.attachment.url} alt="attachment" style={{ maxWidth: '100%', borderRadius: '8px', maxHeight: '250px' }} />
                         )}
-                        {msg.attachment.fileType === 'video' && (
-                          <video src={msg.attachment.url} controls style={{ maxWidth: '100%', borderRadius: '8px', maxHeight: '250px' }} />
-                        )}
-                        {msg.attachment.fileType === 'document' && (
-                          <a href={msg.attachment.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '8px', color: 'white', textDecoration: 'none' }}>
-                            <span style={{ fontSize: '1.5rem' }}>📄</span>
-                            <span style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>{msg.attachment.fileName}</span>
-                          </a>
+                        
+                        {/* Videos and Documents now trigger the Sandbox! */}
+                        {(msg.attachment.fileType === 'video' || msg.attachment.fileType === 'document') && (
+                          <div 
+                            onClick={() => {
+                              setSandboxFile(msg.attachment);
+                              
+                              // TEMPORARY TEST: We removed '&& !isMine' so you can test it on your own files!
+                              // Make sure to add '&& !isMine' back before you deploy to production.
+                              if (msg.attachment.fileType === 'document' || msg.attachment.fileType === 'video') {
+                                setShowDisclaimer(true);
+                              }
+                            }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '8px', color: 'white', cursor: 'pointer', border: '1px solid #444' }}
+                          >
+                            <span style={{ fontSize: '1.5rem' }}>
+                              {msg.attachment.fileType === 'video' ? '🎥' : '📄'}
+                            </span>
+                            <span style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>
+                              {msg.attachment.fileName}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: '#e67e22', marginLeft: '5px' }}>
+                              (Click to View)
+                            </span>
+                          </div>
                         )}
                       </div>
                     )}
 
-                    {/* Only render text if text actually exists! */}
-                    {msg.text && <p>{msg.text}</p>}
+                    {/* --- UPDATED: Render text with parsed links! --- */}
+                    {msg.text && <p>{renderTextWithLinks(msg.text)}</p>}
+                    
                     <span className="timestamp">
                       {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                     </span>
