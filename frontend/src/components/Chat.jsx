@@ -32,6 +32,9 @@ export default function Chat() {
   // --- EMOJI STATE ---
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
+  // Place this near your other state variables
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+
   // --- 1. INITIALIZE SOCKET & FETCH INBOX ---
   useEffect(() => {
     if (!user) return;
@@ -171,6 +174,37 @@ export default function Chat() {
     setShowNewChat(false);
   };
 
+  const handleAddMembersToGroup = async () => {
+    if (selectedUsers.length < 1) return alert("Select at least 1 member to add.");
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/group/add`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+        body: JSON.stringify({ 
+          conversationId: activeChat._id, 
+          userIdsToAdd: selectedUsers.map(u => u._id) 
+        })
+      });
+
+      if (res.ok) {
+        const updatedGroup = await res.json();
+        
+        // Update the active chat and the sidebar list with the new data
+        setActiveChat(updatedGroup);
+        setConversations(conversations.map(c => c._id === updatedGroup._id ? updatedGroup : c));
+        
+        setShowAddMemberModal(false);
+        setSelectedUsers([]);
+      } else {
+        const errData = await res.json();
+        alert(errData.message);
+      }
+    } catch (err) {
+      console.error("Failed to add members", err);
+    }
+  };
+
   const handleCreateGroup = async () => {
     if (!groupName.trim()) return alert("Please enter a group name.");
     if (selectedUsers.length < 1) return alert("Select at least 1 other member.");
@@ -250,6 +284,46 @@ export default function Chat() {
                 handleCreateGroup();
                 setShowGroupModal(false);
               }}>Create Group</button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* --- NEW: ADD MEMBER TO EXISTING GROUP MODAL --- */}
+      {showAddMemberModal && (
+        <div className="chat-modal-overlay">
+          <div className="chat-modal-content">
+            <div className="chat-modal-header">
+              <h2>Add to {activeChat.groupName}</h2>
+              <button onClick={() => { setShowAddMemberModal(false); setSelectedUsers([]); }} className="close-modal-btn">✕</button>
+            </div>
+            
+            <p style={{ color: '#888', marginBottom: '15px' }}>Select members to add to this group.</p>
+            
+            <div className="group-members-list">
+              {allUsers.map(u => {
+                // Don't show users who are already in the group!
+                if (activeChat.participants.some(p => p._id === u._id)) return null;
+
+                const isSelected = selectedUsers.some(su => su._id === u._id);
+                return (
+                  <div 
+                    key={u._id} 
+                    className={`group-member-item ${isSelected ? 'selected' : ''}`}
+                    onClick={() => toggleUserSelection(u)}
+                  >
+                    <div>
+                      <strong>{u.name}</strong> <span style={{fontSize: '0.8rem', color: '#888'}}>({u.role})</span>
+                    </div>
+                    {isSelected && <span className="check-icon">✓</span>}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="chat-modal-actions">
+              <button className="cancel-btn" onClick={() => { setShowAddMemberModal(false); setSelectedUsers([]); }}>Cancel</button>
+              <button className="cta-button" onClick={handleAddMembersToGroup}>Add Members</button>
             </div>
           </div>
         </div>
@@ -337,20 +411,29 @@ export default function Chat() {
         {activeChat ? (
           <>
             <div className="chat-header">
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                {/* --- NEW: MOBILE BACK BUTTON --- */}
-                <button className="mobile-back-btn" onClick={handleCloseChat}>
-                  ← Back
-                </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button className="mobile-back-btn" onClick={handleCloseChat}>← Back</button>
                 
-                <h3>
+                <h3 style={{ margin: 0 }}>
                   {activeChat.isGroup 
                     ? activeChat.groupName 
                     : activeChat.participants.find(p => p._id !== user._id)?.name}
                 </h3>
+
+                {/* --- NEW: Add Member Button (Only visible to Group Admins or Super Admins) --- */}
+                {activeChat.isGroup && (activeChat.groupAdmin === user._id || user.role === 'superadmin') && (
+                  <button 
+                    onClick={() => {
+                      fetchDirectory(); // Fetches all users
+                      setShowAddMemberModal(true);
+                    }}
+                    style={{ background: '#e67e2222', border: '1px solid #e67e22', color: '#e67e22', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', cursor: 'pointer' }}
+                  >
+                    + Add
+                  </button>
+                )}
               </div>
               
-              {/* Your existing close button */}
               <button className="close-chat-btn" onClick={handleCloseChat}>✕</button>
             </div>
             

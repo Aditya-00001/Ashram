@@ -130,3 +130,47 @@ export const createGroupChat = async (req, res) => {
     res.status(500).json({ message: 'Failed to create group chat', error: error.message });
   }
 };
+
+// @desc    Add new members to an existing Group Chat
+// @route   PUT /api/chat/group/add
+// @access  Private
+export const addGroupMembers = async (req, res) => {
+  try {
+    const { conversationId, userIdsToAdd } = req.body;
+
+    const conversation = await Conversation.findById(conversationId);
+    
+    if (!conversation || !conversation.isGroup) {
+      return res.status(400).json({ message: 'Group chat not found.' });
+    }
+
+    // SECURITY: Only the Group Admin (creator) or a Super Admin can add members
+    const isGroupAdmin = conversation.groupAdmin.toString() === req.user._id.toString();
+    const isSuperAdmin = req.user.role === 'superadmin';
+    
+    if (!isGroupAdmin && !isSuperAdmin) {
+      return res.status(403).json({ message: 'Only the Group Admin can add new members.' });
+    }
+
+    // Filter out users who are already in the group to prevent duplicates
+    const currentParticipants = conversation.participants.map(id => id.toString());
+    const newParticipants = userIdsToAdd.filter(id => !currentParticipants.includes(id));
+
+    if (newParticipants.length === 0) {
+      return res.status(400).json({ message: 'Selected users are already in the group.' });
+    }
+
+    // Push the new members into the array and save
+    conversation.participants.push(...newParticipants);
+    await conversation.save();
+
+    // Re-fetch and populate so the frontend has the fresh names/data
+    const updatedGroup = await Conversation.findById(conversationId)
+      .populate('participants', 'name role')
+      .populate('lastMessage');
+
+    res.status(200).json(updatedGroup);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to add members', error: error.message });
+  }
+};
