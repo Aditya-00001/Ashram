@@ -16,6 +16,14 @@ export default function Chat() {
   // --- NEW: Pagination State ---
   const [messagePage, setMessagePage] = useState(1);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
+
+  // --- DIRECTORY PAGINATION STATE ---
+  const [directoryPage, setDirectoryPage] = useState(1);
+  const [directoryTotalPages, setDirectoryTotalPages] = useState(1);
+  const [directorySearch, setDirectorySearch] = useState('');
+
+  // --- GROUP INFO STATE ---
+  const [showGroupInfoModal, setShowGroupInfoModal] = useState(false);
   
   // --- DIRECTORY & GROUP STATE ---
   const [allUsers, setAllUsers] = useState([]);
@@ -35,6 +43,11 @@ export default function Chat() {
   // Place this near your other state variables
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
 
+  // --- ATTACHMENT STATE ---
+  const [selectedFile, setSelectedFile] = useState(null); // Holds the uploaded Cloudinary data
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  
   // --- 1. INITIALIZE SOCKET & FETCH INBOX ---
   useEffect(() => {
     if (!user) return;
@@ -108,40 +121,84 @@ export default function Chat() {
     setNewMessage(prev => prev + emojiObject.emoji);
   };
 
+  // --- FILE UPLOAD HANDLER ---
+  const handleFileSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Frontend Sandbox Check: Enforce 10MB limit before wasting bandwidth
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File is too large. Maximum size is 10MB.");
+      e.target.value = ''; // Reset input
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/upload`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${user.token}` },
+        // Do NOT set 'Content-Type': 'application/json' here. 
+        // The browser automatically sets the correct Multipart boundary for FormData!
+        body: formData 
+      });
+
+      if (res.ok) {
+        const fileData = await res.json();
+        setSelectedFile(fileData); // Saves { url, fileType, fileName }
+      } else {
+        const errData = await res.json();
+        alert(`Upload Failed: ${errData.message}`);
+      }
+    } catch (err) {
+      console.error("Upload error", err);
+      alert("An error occurred during upload.");
+    } finally {
+      setIsUploading(false);
+      e.target.value = ''; // Reset input so you can upload the same file again if needed
+    }
+  };
+
+  // --- 4. SEND MESSAGE ---
   // --- 4. SEND MESSAGE ---
   const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !activeChat) return;
+    if (e) e.preventDefault(); // Make 'e' optional in case we send just an attachment
+    
+    // Require EITHER text OR an attachment to send
+    if (!newMessage.trim() && !selectedFile) return; 
+    if (!activeChat) return;
 
-    // If it's a group, receiverId is not required by our backend (it uses conversationId implicitly if we update it, but for now we rely on the 1-on-1 logic we built. Wait, if it's a temp 1-on-1, we need receiverId. If it's an existing group, we need to send to the group.)
-    // Let's grab the receiver if it's a 1-on-1
     const receiver = activeChat.isGroup ? null : activeChat.participants.find(p => p._id !== user._id);
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
-        // For groups, we might need a dedicated group message route in the future, but our current backend handles creating the convo if missing, or uses receiverId. 
-        // *Note: To make this bulletproof for groups without altering backend further, we pass conversationId if it exists!*
         body: JSON.stringify({ 
           receiverId: receiver ? receiver._id : null, 
           conversationId: activeChat.isNew ? null : activeChat._id,
-          text: newMessage 
+          text: newMessage,
+          attachment: selectedFile // --- NEW: Attach the file data! ---
         })
       });
 
       if (res.ok) {
         const savedMessage = await res.json();
         
-        // If this was a new 1-on-1 chat, update the active chat ID so sockets work!
         if (activeChat.isNew) {
           setActiveChat({ ...activeChat, _id: savedMessage.conversationId, isNew: false });
           socketRef.current.emit('join_chat', savedMessage.conversationId);
         }
 
         socketRef.current.emit('send_message', savedMessage);
+        
+        // --- RESET EVERYTHING ---
         setNewMessage('');
-        setShowEmojiPicker(false); // Close picker on send
+        setSelectedFile(null); 
+        setShowEmojiPicker(false);
       }
     } catch (err) {
       console.error("Failed to send message", err);
@@ -149,17 +206,18 @@ export default function Chat() {
   };
 
   // --- 5. DIRECTORY & GROUPS ---
-  const fetchDirectory = async () => {
-    // --- UPDATED: Uses the safe directory route! ---
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/directory`, {
+  const fetchDirectory = async (page = 1, search = '') => {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/directory?page=${page}&search=${search}`, {
       headers: { 'Authorization': `Bearer ${user.token}` }
     });
     if (res.ok) {
-      setAllUsers(await res.json());
+      const data = await res.json();
+      setAllUsers(data.users);
+      setDirectoryTotalPages(data.totalPages);
+      setDirectoryPage(data.currentPage);
       setShowNewChat(true);
       setIsCreatingGroup(false);
-      setSelectedUsers([]);
-      setGroupName('');
+      // We do NOT clear selectedUsers here, so they don't lose selections when changing pages!
     }
   };
 
@@ -205,6 +263,29 @@ export default function Chat() {
     }
   };
 
+  const handleRemoveMember = async (userIdToRemove) => {
+    if (!window.confirm('Are you sure you want to remove this member?')) return;
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/group/remove`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+        body: JSON.stringify({ conversationId: activeChat._id, userIdToRemove })
+      });
+
+      if (res.ok) {
+        const updatedGroup = await res.json();
+        setActiveChat(updatedGroup);
+        setConversations(conversations.map(c => c._id === updatedGroup._id ? updatedGroup : c));
+      } else {
+        const errData = await res.json();
+        alert(errData.message);
+      }
+    } catch (err) {
+      console.error("Failed to remove member", err);
+    }
+  };
+
   const handleCreateGroup = async () => {
     if (!groupName.trim()) return alert("Please enter a group name.");
     if (selectedUsers.length < 1) return alert("Select at least 1 other member.");
@@ -241,8 +322,8 @@ export default function Chat() {
 
   return (
     <div className={`chat-container ${activeChat ? 'mobile-chat-open' : ''}`}>
-      {/* LEFT SIDEBAR: INBOX */}
-      {/* --- NEW: LARGE GROUP CREATION MODAL --- */}
+      
+      {/* 1. LARGE GROUP CREATION MODAL */}
       {showGroupModal && (
         <div className="chat-modal-overlay">
           <div className="chat-modal-content">
@@ -289,12 +370,12 @@ export default function Chat() {
         </div>
       )}
       
-      {/* --- NEW: ADD MEMBER TO EXISTING GROUP MODAL --- */}
+      {/* 2. ADD MEMBER TO EXISTING GROUP MODAL */}
       {showAddMemberModal && (
         <div className="chat-modal-overlay">
           <div className="chat-modal-content">
             <div className="chat-modal-header">
-              <h2>Add to {activeChat.groupName}</h2>
+              <h2>Add to {activeChat?.groupName}</h2>
               <button onClick={() => { setShowAddMemberModal(false); setSelectedUsers([]); }} className="close-modal-btn">✕</button>
             </div>
             
@@ -303,7 +384,7 @@ export default function Chat() {
             <div className="group-members-list">
               {allUsers.map(u => {
                 // Don't show users who are already in the group!
-                if (activeChat.participants.some(p => p._id === u._id)) return null;
+                if (activeChat?.participants.some(p => p._id === u._id)) return null;
 
                 const isSelected = selectedUsers.some(su => su._id === u._id);
                 return (
@@ -328,6 +409,54 @@ export default function Chat() {
           </div>
         </div>
       )}
+
+      {/* 3. GROUP INFO & MEMBER LIST MODAL (REMOVING MEMBERS) */}
+      {showGroupInfoModal && activeChat?.isGroup && (
+        <div className="chat-modal-overlay">
+          <div className="chat-modal-content">
+            <div className="chat-modal-header">
+              <h2>{activeChat.groupName}</h2>
+              <button onClick={() => setShowGroupInfoModal(false)} className="close-modal-btn">✕</button>
+            </div>
+            
+            <p style={{ color: '#888', marginBottom: '15px' }}>
+              {activeChat.participants.length} Members
+            </p>
+            
+            <div className="group-members-list" style={{ maxHeight: '300px' }}>
+              {activeChat.participants.map(p => {
+                const isAdmin = activeChat.groupAdmin === p._id;
+                // Check if current logged-in user has permission to remove this specific person
+                const canRemove = 
+                  (activeChat.groupAdmin === user._id || user.role === 'superadmin') && 
+                  p._id !== user._id;
+
+                return (
+                  <div key={p._id} className="group-member-item" style={{ cursor: 'default' }}>
+                    <div>
+                      <strong>{p.name}</strong> 
+                      <span style={{fontSize: '0.8rem', color: '#888', marginLeft: '8px'}}>
+                        {isAdmin ? '(Group Admin)' : `(${p.role})`}
+                      </span>
+                    </div>
+                    
+                    {canRemove && (
+                      <button 
+                        onClick={() => handleRemoveMember(p._id)}
+                        style={{ background: '#ff475722', border: '1px solid #ff4757', color: '#ff4757', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LEFT SIDEBAR: INBOX */}
       <div className="chat-sidebar">
         <div className="sidebar-header">
           <h3>Community Chat</h3>
@@ -357,6 +486,32 @@ export default function Chat() {
                 style={{ width: '100%', padding: '8px', marginBottom: '10px', backgroundColor: '#1a1a1a', color: '#fff', border: '1px solid #444', borderRadius: '4px' }}
               />
             )}
+            {/* Search & Pagination Bar */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+              <input 
+                type="text" 
+                placeholder="Search name..." 
+                value={directorySearch}
+                onChange={(e) => setDirectorySearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fetchDirectory(1, directorySearch)}
+                style={{ flex: 1, padding: '8px', backgroundColor: '#1a1a1a', border: '1px solid #444', color: '#fff', borderRadius: '4px' }}
+              />
+              <button onClick={() => fetchDirectory(1, directorySearch)} className="cta-button" style={{ padding: '0 10px' }}>Search</button>
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', fontSize: '0.85rem', color: '#888' }}>
+              <button 
+                onClick={() => fetchDirectory(directoryPage - 1, directorySearch)} 
+                disabled={directoryPage === 1}
+                style={{ background: 'none', border: 'none', color: directoryPage === 1 ? '#444' : '#e67e22', cursor: 'pointer' }}
+              >← Prev</button>
+              <span>Page {directoryPage} of {directoryTotalPages}</span>
+              <button 
+                onClick={() => fetchDirectory(directoryPage + 1, directorySearch)} 
+                disabled={directoryPage === directoryTotalPages}
+                style={{ background: 'none', border: 'none', color: directoryPage === directoryTotalPages ? '#444' : '#e67e22', cursor: 'pointer' }}
+              >Next →</button>
+            </div>
 
             {allUsers.map(u => {
               const isSelected = selectedUsers.some(su => su._id === u._id);
@@ -414,7 +569,11 @@ export default function Chat() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <button className="mobile-back-btn" onClick={handleCloseChat}>← Back</button>
                 
-                <h3 style={{ margin: 0 }}>
+                <h3 
+                  style={{ margin: 0, cursor: activeChat.isGroup ? 'pointer' : 'default', textDecoration: activeChat.isGroup ? 'underline' : 'none' }}
+                  onClick={() => activeChat.isGroup && setShowGroupInfoModal(true)}
+                  title={activeChat.isGroup ? "View Group Info" : ""}
+                >
                   {activeChat.isGroup 
                     ? activeChat.groupName 
                     : activeChat.participants.find(p => p._id !== user._id)?.name}
@@ -462,7 +621,27 @@ export default function Chat() {
                         {senderName}
                       </strong>
                     )}
-                    <p>{msg.text}</p>
+                    
+                    {/* --- NEW: RENDER ATTACHMENTS --- */}
+                    {msg.attachment && (
+                      <div style={{ marginBottom: msg.text ? '10px' : '0' }}>
+                        {msg.attachment.fileType === 'image' && (
+                          <img src={msg.attachment.url} alt="attachment" style={{ maxWidth: '100%', borderRadius: '8px', maxHeight: '250px' }} />
+                        )}
+                        {msg.attachment.fileType === 'video' && (
+                          <video src={msg.attachment.url} controls style={{ maxWidth: '100%', borderRadius: '8px', maxHeight: '250px' }} />
+                        )}
+                        {msg.attachment.fileType === 'document' && (
+                          <a href={msg.attachment.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '8px', color: 'white', textDecoration: 'none' }}>
+                            <span style={{ fontSize: '1.5rem' }}>📄</span>
+                            <span style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>{msg.attachment.fileName}</span>
+                          </a>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Only render text if text actually exists! */}
+                    {msg.text && <p>{msg.text}</p>}
                     <span className="timestamp">
                       {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                     </span>
@@ -472,32 +651,60 @@ export default function Chat() {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* --- NEW: ATTACHMENT PREVIEW SANDBOX --- */}
+            {selectedFile && (
+              <div style={{ padding: '10px 20px', backgroundColor: '#222', borderTop: '1px solid #333', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {selectedFile.fileType === 'image' && <img src={selectedFile.url} alt="preview" style={{ height: '50px', borderRadius: '4px' }} />}
+                  {selectedFile.fileType === 'video' && <span style={{ fontSize: '1.5rem' }}>🎥</span>}
+                  {selectedFile.fileType === 'document' && <span style={{ fontSize: '1.5rem' }}>📄</span>}
+                  <span style={{ color: '#ccc', fontSize: '0.9rem' }}>{selectedFile.fileName}</span>
+                </div>
+                <button onClick={() => setSelectedFile(null)} style={{ background: 'none', border: 'none', color: '#ff4757', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
+              </div>
+            )}
+            
+            {isUploading && (
+              <div style={{ padding: '5px 20px', backgroundColor: '#222', color: '#e67e22', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                Uploading to secure cloud... Please wait.
+              </div>
+            )}
+
             <form className="chat-input-area" onSubmit={handleSendMessage}>
-              
-              {/* Container for the input and emoji button */}
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, gap: '10px' }}>
                 
-                {/* --- NEW: THE EMOJI PICKER POPUP --- */}
+                {/* EMOJI PICKER MODAL */}
                 {showEmojiPicker && (
                   <div style={{ position: 'absolute', bottom: '100%', left: 0, zIndex: 50, marginBottom: '15px', boxShadow: '0 5px 15px rgba(0,0,0,0.5)' }}>
-                    <EmojiPicker 
-                      onEmojiClick={onEmojiClick} 
-                      theme="dark" // Matches our Ashram dark UI perfectly
-                      searchDisabled={false}
-                      skinTonesDisabled={true} // Keeps the UI cleaner
-                      height={350} 
-                      width={300}
-                    />
+                    <EmojiPicker onEmojiClick={onEmojiClick} theme="dark" searchDisabled={false} skinTonesDisabled={true} height={350} width={300} />
                   </div>
                 )}
 
-                {/* --- NEW: EMOJI TOGGLE BUTTON --- */}
+                {/* HIDDEN FILE INPUT */}
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileSelect} 
+                  style={{ display: 'none' }} 
+                  accept="image/*,video/mp4,video/quicktime,application/pdf" 
+                />
+
+                {/* ATTACHMENT PAPERCLIP BUTTON */}
+                <button 
+                  type="button" 
+                  onClick={() => fileInputRef.current.click()}
+                  disabled={isUploading}
+                  style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: isUploading ? 'not-allowed' : 'pointer', padding: '0 5px', color: isUploading ? '#444' : '#888', transition: 'color 0.2s' }}
+                  title="Attach File"
+                >
+                  📎
+                </button>
+
+                {/* EMOJI BUTTON */}
                 <button 
                   type="button" 
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', padding: '0 5px', color: '#888', transition: 'color 0.2s' }}
-                  onMouseOver={(e) => e.currentTarget.style.color = '#e67e22'}
-                  onMouseOut={(e) => e.currentTarget.style.color = '#888'}
                   title="Add Emoji"
                 >
                   😀
@@ -515,13 +722,13 @@ export default function Chat() {
                       setNewMessage(prev => prev + '\n');
                     }
                   }}
-                  placeholder="Type a message... (Enter to send, Ctrl+Enter for new line)" 
-                  required
+                  placeholder="Type a message... (Enter to send)" 
                   rows="1"
                 />
               </div>
 
-              <button type="submit" className="send-btn">Send</button>
+              {/* Disable send button if uploading so we don't send half-finished payloads */}
+              <button type="submit" className="send-btn" disabled={isUploading} style={{ opacity: isUploading ? 0.5 : 1 }}>Send</button>
             </form>
           </>
         ) : (

@@ -13,12 +13,19 @@ const chatMessageSchema = new mongoose.Schema({
   },
   text: {
     type: String,
-    required: true
+    // Text is no longer strictly required if they are just sending a file!
+    required: function() { return !this.attachment; } 
+  },
+  // --- NEW: ATTACHMENT FIELDS ---
+  attachment: {
+    url: { type: String },
+    fileType: { type: String, enum: ['image', 'video', 'document'] },
+    fileName: { type: String }
   },
   isRead: {
     type: Boolean,
     default: false
   }
-}, { timestamps: true }); // timestamps give us 'createdAt' for ordering the chat bubbles
+}, { timestamps: true });
 
 export default mongoose.model('ChatMessage', chatMessageSchema);

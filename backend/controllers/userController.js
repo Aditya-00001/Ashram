@@ -135,17 +135,39 @@ export const updateUserRole = async (req, res) => {
   }
 };
 
-// @desc    Get public user directory for Chat
+// @desc    Get public user directory for Chat (PAGINATED & SEARCHABLE)
 // @route   GET /api/users/directory
 // @access  Private (All logged-in members)
 export const getUserDirectory = async (req, res) => {
   try {
-    // Return all users EXCEPT the currently logged-in user
-    // Only send back the _id, name, and role. NEVER send passwords or email here.
-    const users = await User.find({ _id: { $ne: req.user._id }, isVerified: true })
-                            .select('_id name role');
-    
-    res.status(200).json(users);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20; // 20 users per page
+    const search = req.query.search || '';
+
+    // Base query: Not the current user, and must be verified
+    const query = {
+      _id: { $ne: req.user._id },
+      isVerified: true
+    };
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const total = await User.countDocuments(query);
+    const users = await User.find(query)
+                            .select('_id name role') // Never send passwords/emails here
+                            .skip((page - 1) * limit)
+                            .limit(limit);
+
+    res.status(200).json({ 
+      users, 
+      totalPages: Math.ceil(total / limit), 
+      currentPage: page 
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching directory' });
   }

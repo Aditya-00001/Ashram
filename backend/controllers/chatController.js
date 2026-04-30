@@ -6,24 +6,21 @@ import ChatMessage from '../models/ChatMessage.js';
 // @access  Private
 export const sendMessage = async (req, res) => {
   try {
-    const { receiverId, conversationId, text } = req.body; // <-- Extract conversationId
+    // 1. Extract 'attachment' from the incoming request body!
+    const { receiverId, conversationId, text, attachment } = req.body; 
     const senderId = req.user._id;
 
     let conversation;
 
-    // 1. If we already know the room (like a Group or existing chat), find it directly!
     if (conversationId) {
       conversation = await Conversation.findById(conversationId);
-    } 
-    // 2. Otherwise, look for an existing 1-on-1 chat
-    else if (receiverId) {
+    } else if (receiverId) {
       conversation = await Conversation.findOne({
         isGroup: false,
         participants: { $all: [senderId, receiverId], $size: 2 } 
       });
     }
 
-    // 3. If NO conversation exists at all, create a brand new 1-on-1
     if (!conversation && receiverId) {
       conversation = await Conversation.create({
         participants: [senderId, receiverId]
@@ -32,23 +29,24 @@ export const sendMessage = async (req, res) => {
 
     if (!conversation) return res.status(400).json({ message: "Invalid chat request" });
 
-    // 3. Create the actual message document
+    // 2. Add the attachment to the new message document!
     const newMessage = new ChatMessage({
       conversationId: conversation._id,
       sender: senderId,
-      text: text
+      text: text,
+      attachment: attachment // <-- THIS IS THE MISSING PIECE!
     });
 
     const savedMessage = await newMessage.save();
 
-    // 4. Update the conversation's "lastMessage" so the Inbox UI loads fast
+    // 3. We also need to populate the sender name so groups know who sent the file!
+    const populatedMessage = await ChatMessage.findById(savedMessage._id).populate('sender', 'name');
+
     conversation.lastMessage = savedMessage._id;
     await conversation.save();
 
-    // Note: The real-time ping to the other user's screen will be handled 
-    // by Socket.io on the frontend right after this API responds!
-    
-    res.status(201).json(savedMessage);
+    // 4. Send the populated message back so WebSockets can broadcast the name + file
+    res.status(201).json(populatedMessage);
   } catch (error) {
     res.status(500).json({ message: 'Failed to send message', error: error.message });
   }
@@ -172,5 +170,45 @@ export const addGroupMembers = async (req, res) => {
     res.status(200).json(updatedGroup);
   } catch (error) {
     res.status(500).json({ message: 'Failed to add members', error: error.message });
+  }
+};
+
+// @desc    Remove a member from a Group Chat
+// @route   PUT /api/chat/group/remove
+// @access  Private
+export const removeGroupMember = async (req, res) => {
+  try {
+    const { conversationId, userIdToRemove } = req.body;
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation || !conversation.isGroup) {
+      return res.status(400).json({ message: 'Group not found.' });
+    }
+
+    const isGroupAdmin = conversation.groupAdmin.toString() === req.user._id.toString();
+    const isSuperAdmin = req.user.role === 'superadmin';
+    const isSelfLeaving = req.user._id.toString() === userIdToRemove;
+
+    if (!isGroupAdmin && !isSuperAdmin && !isSelfLeaving) {
+      return res.status(403).json({ message: 'Only the Group Admin can remove members.' });
+    }
+
+    // Prevent removing the Group Admin unless it's a Super Admin intervening
+    if (conversation.groupAdmin.toString() === userIdToRemove && !isSuperAdmin && !isSelfLeaving) {
+      return res.status(400).json({ message: 'Cannot remove the group administrator.' });
+    }
+
+    // Filter out the user
+    conversation.participants = conversation.participants.filter(id => id.toString() !== userIdToRemove);
+    await conversation.save();
+
+    // Return updated group
+    const updatedGroup = await Conversation.findById(conversationId)
+      .populate('participants', 'name role')
+      .populate('lastMessage');
+
+    res.status(200).json(updatedGroup);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to remove member', error: error.message });
   }
 };
