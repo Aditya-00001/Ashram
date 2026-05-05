@@ -12,6 +12,7 @@ import io from 'socket.io-client';
 import './Chat.css';
 import CameraCapture from './CameraCapture';
 import CreatePollModal from './CreatePollModal';
+import ChatVaultModal from './ChatVaultModal';
 
 // ==========================================
 // 🔓 E2EE DECRYPTION COMPONENT 
@@ -76,7 +77,15 @@ const MessageBubble = ({ msg, activeChat, user, renderTextWithLinks, setSandboxF
       {msg.attachment && (
         <div style={{ marginBottom: displayText ? '10px' : '0' }}>
           {msg.attachment.fileType === 'image' && (
-            <img src={msg.attachment.url} alt="attachment" style={{ maxWidth: '100%', borderRadius: '8px', maxHeight: '250px' }} />
+            <img 
+              src={msg.attachment.url} 
+              alt="attachment" 
+              onClick={() => {
+                setSandboxFile(msg.attachment);
+                // No need to set showDisclaimer for images!
+              }}
+              style={{ maxWidth: '100%', borderRadius: '8px', maxHeight: '250px', cursor: 'pointer' }} 
+            />
           )}
           
           {(msg.attachment.fileType === 'video' || msg.attachment.fileType === 'document') && (
@@ -211,6 +220,8 @@ export default function Chat() {
   const [showCamera, setShowCamera] = useState(false);
 
   const [showPollModal, setShowPollModal] = useState(false);
+
+  const [showVault, setShowVault] = useState(false);
   
   // --- 1. INITIALIZE SOCKET & FETCH INBOX ---
   useEffect(() => {
@@ -482,6 +493,13 @@ export default function Chat() {
     }
   };
 
+  const handleOpenVaultDocument = (attachment) => {
+    setSandboxFile(attachment);
+    if (attachment.fileType === 'document' || attachment.fileType === 'video') {
+      setShowDisclaimer(true);
+    }
+  };
+
   // --- 5. DIRECTORY & GROUPS ---
   const fetchDirectory = async (page = 1, search = '') => {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/directory?page=${page}&search=${search}`, {
@@ -606,8 +624,9 @@ export default function Chat() {
       
       {/* 1. VIRUS/MALWARE DISCLAIMER */}
       {showDisclaimer && sandboxFile && (
-        <div className="chat-modal-overlay" style={{ zIndex: 1001 }}>
+        <div className="chat-modal-overlay" style={{ zIndex: 3001 }}> {/* <-- INCREASED TO 3001 */}
           <div className="chat-modal-content" style={{ borderTop: '4px solid #ff4757' }}>
+            {/* ... rest of the disclaimer content stays exactly the same ... */}
             <div className="chat-modal-header">
               <h2 style={{ color: '#ff4757' }}>⚠️ Security Warning</h2>
             </div>
@@ -628,13 +647,13 @@ export default function Chat() {
         </div>
       )}
 
-      {/* 2. SANDBOXED IFRAME VIEWER */}
+      {/* 2. UNIVERSAL MEDIA VIEWER (SANDBOX) */}
       {sandboxFile && !showDisclaimer && (
-        <div className="chat-modal-overlay" style={{ zIndex: 1000, padding: '20px' }}>
+        <div className="chat-modal-overlay" style={{ zIndex: 3000, padding: '20px' }}> {/* <-- INCREASED TO 3000 */}
           <div className="chat-modal-content" style={{ width: '100%', maxWidth: '900px', height: '80vh', display: 'flex', flexDirection: 'column', padding: '15px' }}>
             <div className="chat-modal-header" style={{ marginBottom: '15px' }}>
               <h3 style={{ margin: 0, color: '#e67e22', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                Protected View: {sandboxFile.fileName}
+                Protected View: {sandboxFile.fileName || 'Image'}
               </h3>
               <div style={{ display: 'flex', gap: '15px' }}>
                 <a href={sandboxFile.url} download target="_blank" rel="noopener noreferrer" style={{ color: '#888', textDecoration: 'none', fontSize: '0.9rem' }}>Download Original</a>
@@ -643,11 +662,12 @@ export default function Chat() {
             </div>
             
             <div style={{ flex: 1, backgroundColor: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid #333' }}>
-              {sandboxFile.fileType === 'video' ? (
+              {/* --- NEW: RENDER IMAGES, VIDEOS, OR IFRAMES --- */}
+              {sandboxFile.fileType === 'image' ? (
+                <img src={sandboxFile.url} alt="Full screen preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              ) : sandboxFile.fileType === 'video' ? (
                 <video src={sandboxFile.url} controls autoPlay style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               ) : (
-                /* The magic sandbox attribute prevents malicious code execution inside the iframe! */
-                /* We wrap the URL in Google Docs Viewer to bypass native plugin blocks securely! */
                 <iframe 
                   src={`https://docs.google.com/viewer?url=${encodeURIComponent(sandboxFile.url)}&embedded=true`} 
                   title="Document Viewer"
@@ -742,6 +762,7 @@ export default function Chat() {
             <div className="chat-modal-actions">
               <button className="cancel-btn" onClick={() => { setShowAddMemberModal(false); setSelectedUsers([]); }}>Cancel</button>
               <button className="cta-button" onClick={handleAddMembersToGroup}>Add Members</button>
+              
             </div>
           </div>
         </div>
@@ -937,6 +958,14 @@ export default function Chat() {
                     + Add
                   </button>
                 )}
+                {/* --- NEW: CHAT VAULT BUTTON --- */}
+                <button 
+                  onClick={() => setShowVault(true)}
+                  style={{ background: 'none', border: 'none', color: '#888', fontSize: '1.2rem', cursor: 'pointer', padding: '0 5px' }}
+                  title="Open Chat Vault"
+                >
+                  📁
+                </button>
               </div>
               
               <button className="close-chat-btn" onClick={handleCloseChat}>✕</button>
@@ -1002,6 +1031,17 @@ export default function Chat() {
               <CreatePollModal 
                 onSubmit={handleSendPoll} 
                 onClose={() => setShowPollModal(false)} 
+              />
+            )}
+
+            {/* --- NEW: CHAT VAULT MODAL --- */}
+            {showVault && (
+              <ChatVaultModal 
+                conversationId={activeChat._id}
+                chatName={activeChat.isGroup ? activeChat.groupName : activeChat.participants.find(p => p._id !== user._id)?.name}
+                token={user.token}
+                onClose={() => setShowVault(false)}
+                onOpenDocument={handleOpenVaultDocument}
               />
             )}
 

@@ -254,3 +254,34 @@ export const voteOnPoll = async (req, res) => {
     res.status(500).json({ message: 'Failed to cast vote', error: error.message });
   }
 };
+
+// @desc    Get all media and documents for a specific conversation
+// @route   GET /api/chat/:conversationId/media
+// @access  Private
+export const getChatMedia = async (req, res) => {
+  try {
+    // Find all messages in this chat that have an attachment
+    const messagesWithAttachments = await ChatMessage.find({
+      conversationId: req.params.conversationId,
+      attachment: { $ne: null } // Only get messages where attachment is NOT null
+    })
+    .sort({ createdAt: -1 }) // Newest first
+    .populate('sender', 'name');
+
+    const media = [];
+    const docs = [];
+
+    // Sort them into buckets for the frontend
+    messagesWithAttachments.forEach(msg => {
+      if (['image', 'video'].includes(msg.attachment.fileType)) {
+        media.push(msg);
+      } else if (msg.attachment.fileType === 'document') {
+        docs.push(msg);
+      }
+    });
+
+    res.status(200).json({ media, docs });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch chat media', error: error.message });
+  }
+};

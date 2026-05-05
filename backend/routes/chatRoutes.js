@@ -1,5 +1,5 @@
 import express from 'express';
-import { sendMessage, getConversations, getMessages, createGroupChat, addGroupMembers, removeGroupMember, voteOnPoll } from '../controllers/chatController.js';
+import { sendMessage, getConversations, getMessages, createGroupChat, addGroupMembers, removeGroupMember, voteOnPoll, getChatMedia } from '../controllers/chatController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { upload } from '../utils/cloudinary.js'; // --- NEW IMPORT ---
 
@@ -13,6 +13,10 @@ router.put('/group/add', protect, addGroupMembers);
 router.put('/group/remove', protect, removeGroupMember);
 // --- NEW: Poll Voting Route ---
 router.put('/poll/:messageId/vote', protect, voteOnPoll);
+
+// --- NEW: Chat Vault Route ---
+router.get('/:conversationId/media', protect, getChatMedia);
+
 // --- NEW ROUTE: HANDLE FILE UPLOADS ---
 // 'upload.single('file')' tells Multer to intercept the file named 'file' in the form data
 router.post('/upload', protect, upload.single('file'), async (req, res) => {
