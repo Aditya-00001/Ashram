@@ -7,8 +7,7 @@ import ChatMessage from '../models/ChatMessage.js';
 export const sendMessage = async (req, res) => {
   try {
     // 1. Extract 'attachment' from the incoming request body!
-    const { receiverId, conversationId, text, iv, attachment } = req.body;
-    const senderId = req.user._id;
+    const { receiverId, conversationId, text, iv, attachment, messageType, pollData } = req.body;    const senderId = req.user._id;
 
     let conversation;
 
@@ -29,14 +28,16 @@ export const sendMessage = async (req, res) => {
 
     if (!conversation) return res.status(400).json({ message: "Invalid chat request" });
 
-    // 2. Add the attachment to the new message document!
-    // Save it to the database
+    // 2. Update the database creation payload
     const newMessage = new ChatMessage({
       conversationId: conversation._id,
       sender: senderId,
       text: text,
-      iv: iv || [], // Save the IV!
-      attachment: attachment
+      iv: iv || [],
+      attachment: attachment,
+      // Pass the poll data!
+      messageType: messageType || 'text',
+      pollData: pollData || null
     });
 
     const savedMessage = await newMessage.save();
@@ -212,5 +213,44 @@ export const removeGroupMember = async (req, res) => {
     res.status(200).json(updatedGroup);
   } catch (error) {
     res.status(500).json({ message: 'Failed to remove member', error: error.message });
+  }
+};
+
+// @desc    Vote on a poll message
+// @route   PUT /api/chat/poll/:messageId/vote
+// @access  Private
+export const voteOnPoll = async (req, res) => {
+  try {
+    const { optionId } = req.body;
+    const userId = req.user._id;
+
+    const message = await ChatMessage.findById(req.params.messageId);
+
+    if (!message || message.messageType !== 'poll') {
+      return res.status(404).json({ message: 'Poll not found.' });
+    }
+
+    // 1. Remove the user's vote from ANY option they previously voted for (allows changing votes)
+    message.pollData.options.forEach(opt => {
+      opt.voters = opt.voters.filter(voterId => voterId.toString() !== userId.toString());
+    });
+
+    // 2. Add the user's vote to the selected option
+    const selectedOption = message.pollData.options.id(optionId);
+    if (!selectedOption) {
+      return res.status(400).json({ message: 'Invalid poll option.' });
+    }
+    
+    selectedOption.voters.push(userId);
+
+    // 3. Save the updated message
+    await message.save();
+
+    // 4. Re-populate the sender so the frontend doesn't lose the sender's name
+    const updatedMessage = await ChatMessage.findById(message._id).populate('sender', 'name publicKey');
+
+    res.status(200).json(updatedMessage);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to cast vote', error: error.message });
   }
 };

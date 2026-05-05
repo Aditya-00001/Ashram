@@ -27,6 +27,20 @@ const chatMessageSchema = new mongoose.Schema({
     fileType: { type: String, enum: ['image', 'video', 'document'] },
     fileName: { type: String }
   },
+  // --- NEW: POLL FIELDS ---
+  messageType: { 
+    type: String, 
+    enum: ['text', 'poll'], 
+    default: 'text' 
+  },
+  pollData: {
+    question: { type: String },
+    options: [{
+      optionText: { type: String },
+      // Store an array of User IDs who voted for this specific option
+      voters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] 
+    }]
+  },
   isRead: {
     type: Boolean,
     default: false

@@ -10,11 +10,13 @@ import {
 import EmojiPicker from 'emoji-picker-react';
 import io from 'socket.io-client';
 import './Chat.css';
+import CameraCapture from './CameraCapture';
+import CreatePollModal from './CreatePollModal';
 
 // ==========================================
 // 🔓 E2EE DECRYPTION COMPONENT 
 // ==========================================
-const MessageBubble = ({ msg, activeChat, user, renderTextWithLinks, setSandboxFile, setShowDisclaimer }) => {
+const MessageBubble = ({ msg, activeChat, user, renderTextWithLinks, setSandboxFile, setShowDisclaimer, handleVote }) => {
   const [displayText, setDisplayText] = useState('');
   const [isDecrypting, setIsDecrypting] = useState(false);
 
@@ -95,8 +97,57 @@ const MessageBubble = ({ msg, activeChat, user, renderTextWithLinks, setSandboxF
         </div>
       )}
 
-      {/* --- TEXT RENDERING (Handles Loading State) --- */}
-      {isDecrypting ? (
+      {/* --- TEXT OR POLL RENDERING --- */}
+      {msg.messageType === 'poll' && msg.pollData ? (
+        <div style={{ minWidth: '250px', marginTop: '5px' }}>
+          <h4 style={{ margin: '0 0 15px 0', color: '#fff' }}>📊 {msg.pollData.question}</h4>
+          
+          {msg.pollData.options.map((opt) => {
+            // Calculate votes and percentages
+            const totalVotes = msg.pollData.options.reduce((sum, o) => sum + o.voters.length, 0);
+            const percent = totalVotes === 0 ? 0 : Math.round((opt.voters.length / totalVotes) * 100);
+            const hasVoted = opt.voters.includes(user._id);
+
+            return (
+              <div 
+                key={opt._id}
+                onClick={() => handleVote(msg._id, opt._id)} // <--- INSTANT VOTE TRIGGER
+                style={{
+                  position: 'relative',
+                  padding: '10px 15px',
+                  marginBottom: '8px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  border: hasVoted ? '1px solid #e67e22' : '1px solid #444',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  backgroundColor: '#222'
+                }}
+              >
+                {/* The animated background progress bar! */}
+                <div style={{
+                  position: 'absolute', top: 0, left: 0, height: '100%', 
+                  width: `${percent}%`, 
+                  backgroundColor: hasVoted ? 'rgba(230, 126, 34, 0.3)' : 'rgba(255,255,255,0.1)',
+                  transition: 'width 0.4s ease-out',
+                  zIndex: 1
+                }} />
+                
+                <span style={{ position: 'relative', zIndex: 2, fontWeight: hasVoted ? 'bold' : 'normal', color: hasVoted ? '#e67e22' : '#fff' }}>
+                  {opt.optionText}
+                </span>
+                <span style={{ position: 'relative', zIndex: 2, color: '#888', fontSize: '0.9rem' }}>
+                  {totalVotes > 0 ? `${percent}%` : ''}
+                </span>
+              </div>
+            );
+          })}
+          <div style={{ fontSize: '0.8rem', color: '#888', textAlign: 'right', marginTop: '5px' }}>
+            {msg.pollData.options.reduce((sum, o) => sum + o.voters.length, 0)} votes
+          </div>
+        </div>
+      ) : isDecrypting ? (
          <p style={{ color: '#888', fontStyle: 'italic', fontSize: '0.9rem' }}>🔒 Decrypting...</p>
       ) : (
          displayText && <p>{renderTextWithLinks(displayText)}</p>
@@ -156,6 +207,10 @@ export default function Chat() {
   // --- SECURITY SANDBOX STATE ---
   const [sandboxFile, setSandboxFile] = useState(null); 
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+
+  const [showCamera, setShowCamera] = useState(false);
+
+  const [showPollModal, setShowPollModal] = useState(false);
   
   // --- 1. INITIALIZE SOCKET & FETCH INBOX ---
   useEffect(() => {
@@ -180,6 +235,13 @@ export default function Chat() {
            const dateB = b._id === incomingMessage.conversationId ? new Date() : new Date(b.updatedAt);
            return dateB - dateA;
         })
+      );
+    });
+
+    // --- NEW: LISTEN FOR UPDATED MESSAGES (LIKE POLL VOTES) ---
+    socketRef.current.on('update_message', (updatedMessage) => {
+      setMessages((prevMessages) => 
+        prevMessages.map(msg => msg._id === updatedMessage._id ? updatedMessage : msg)
       );
     });
 
@@ -229,6 +291,13 @@ export default function Chat() {
     setNewMessage(prev => prev + emojiObject.emoji);
   };
 
+  // --- CAMERA CAPTURE HANDLER ---
+  const handleCameraCapture = (file) => {
+    // We mock an event object so we can reuse our existing handleFileSelect logic!
+    const mockEvent = { target: { files: [file] } };
+    handleFileSelect(mockEvent);
+  };
+  
   // --- FILE UPLOAD HANDLER ---
   const handleFileSelect = async (e) => {
     const file = e.target.files[0];
@@ -364,6 +433,52 @@ export default function Chat() {
       }
     } catch (err) {
       console.error("Failed to send message", err);
+    }
+  };
+
+  const handleSendPoll = async (pollData) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+        body: JSON.stringify({ 
+          conversationId: activeChat.isNew ? null : activeChat._id,
+          receiverId: activeChat.isGroup ? null : activeChat.participants.find(p => p._id !== user._id)?._id,
+          messageType: 'poll',
+          pollData: pollData 
+        })
+      });
+
+      if (res.ok) {
+        const savedMessage = await res.json();
+        socketRef.current.emit('send_message', savedMessage);
+        setShowPollModal(false);
+      }
+    } catch (err) {
+      console.error("Failed to send poll", err);
+    }
+  };
+
+  // --- HANDLE POLL VOTING (INSTANT UI UPDATE) ---
+  const handleVote = async (messageId, optionId) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/poll/${messageId}/vote`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+        body: JSON.stringify({ optionId })
+      });
+
+      if (res.ok) {
+        const updatedMsg = await res.json();
+        
+        // 1. Instantly update the local UI for the person who clicked it!
+        setMessages((prev) => prev.map(msg => msg._id === updatedMsg._id ? updatedMsg : msg));
+
+        // 2. Broadcast the updated message to everyone else in the group via WebSockets!
+        socketRef.current.emit('update_message', updatedMsg);
+      }
+    } catch (err) {
+      console.error("Failed to cast vote", err);
     }
   };
 
@@ -849,6 +964,7 @@ export default function Chat() {
                   renderTextWithLinks={renderTextWithLinks}
                   setSandboxFile={setSandboxFile}
                   setShowDisclaimer={setShowDisclaimer}
+                  handleVote={handleVote} /* <--- NEW PROP! */
                 />
               ))}
               <div ref={messagesEndRef} />
@@ -871,6 +987,22 @@ export default function Chat() {
               <div style={{ padding: '5px 20px', backgroundColor: '#222', color: '#e67e22', fontSize: '0.8rem', fontStyle: 'italic' }}>
                 Uploading to secure cloud... Please wait.
               </div>
+            )}
+
+            {/* --- NEW: CAMERA MODAL --- */}
+            {showCamera && (
+              <CameraCapture 
+                onCapture={handleCameraCapture} 
+                onClose={() => setShowCamera(false)} 
+              />
+            )}
+
+            {/* --- NEW: POLL MODAL --- */}
+            {showPollModal && (
+              <CreatePollModal 
+                onSubmit={handleSendPoll} 
+                onClose={() => setShowPollModal(false)} 
+              />
             )}
 
             <form className="chat-input-area" onSubmit={handleSendMessage}>
@@ -903,6 +1035,30 @@ export default function Chat() {
                   📎
                 </button>
 
+                {/* --- NEW: CAMERA BUTTON --- */}
+                <button 
+                  type="button" 
+                  onClick={() => setShowCamera(true)}
+                  disabled={isUploading}
+                  style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: isUploading ? 'not-allowed' : 'pointer', padding: '0 5px', color: isUploading ? '#444' : '#888', transition: 'color 0.2s' }}
+                  title="Take Photo"
+                >
+                  📷
+                </button>
+                
+                {/* --- NEW: POLL BUTTON (GROUPS ONLY) --- */}
+                {activeChat.isGroup && (
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPollModal(true)}
+                    disabled={isUploading}
+                    style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: isUploading ? 'not-allowed' : 'pointer', padding: '0 5px', color: isUploading ? '#444' : '#888', transition: 'color 0.2s' }}
+                    title="Create Poll"
+                  >
+                    📊
+                  </button>
+                )}
+
                 {/* EMOJI BUTTON */}
                 <button 
                   type="button" 
@@ -912,6 +1068,7 @@ export default function Chat() {
                 >
                   😀
                 </button>
+                
 
                 <textarea 
                   value={newMessage} 

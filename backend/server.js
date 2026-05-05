@@ -125,9 +125,14 @@ io.on('connection', (socket) => {
   });
 
   // When a user sends a message, broadcast it to everyone in that specific room
-  socket.on('send_message', (data) => {
-    // data should contain { conversationId, senderId, text, createdAt, etc. }
-    io.to(data.conversationId).emit('receive_message', data);
+  // Existing send_message event
+  socket.on('send_message', (message) => {
+    socket.to(message.conversationId).emit('receive_message', message);
+  });
+
+  // --- NEW: Relay updated messages (Polls) to everyone else in the chat ---
+  socket.on('update_message', (message) => {
+    socket.to(message.conversationId).emit('update_message', message);
   });
 
   socket.on('disconnect', () => {
