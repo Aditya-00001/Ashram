@@ -16,6 +16,11 @@ const chatMessageSchema = new mongoose.Schema({
     // Text is no longer strictly required if they are just sending a file!
     required: function() { return !this.attachment; } 
   },
+  // --- NEW: INITIALIZATION VECTOR FOR E2EE ---
+  iv: {
+    type: [Number], // Stores the 12-byte IV array needed for decryption
+    default: []
+  },
   // --- NEW: ATTACHMENT FIELDS ---
   attachment: {
     url: { type: String },

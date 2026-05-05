@@ -16,7 +16,9 @@ const userSchema = new mongoose.Schema({
   verificationCode: { type: String }, // Stores the 6-digit code during signup
   
   resetPasswordToken: { type: String }, // Stores the token for forgot password
-  resetPasswordExpire: { type: Date } // Expiration time for the reset token
+  resetPasswordExpire: { type: Date }, // Expiration time for the reset token
+  // --- NEW: E2EE PUBLIC KEY ---
+  publicKey: { type: Object, default: null }
 }, { 
   timestamps: true 
 });

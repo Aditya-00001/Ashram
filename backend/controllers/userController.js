@@ -159,7 +159,8 @@ export const getUserDirectory = async (req, res) => {
 
     const total = await User.countDocuments(query);
     const users = await User.find(query)
-                            .select('_id name role') // Never send passwords/emails here
+                            // ADD publicKey TO THE SELECT LIST!
+                            .select('_id name role publicKey') 
                             .skip((page - 1) * limit)
                             .limit(limit);
 
@@ -170,5 +171,30 @@ export const getUserDirectory = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching directory' });
+  }
+};
+
+// @desc    Save user's E2EE Public Key
+// @route   PUT /api/users/public-key
+// @access  Private
+export const updatePublicKey = async (req, res) => {
+  try {
+    const { publicKey } = req.body;
+    
+    if (!publicKey) {
+      return res.status(400).json({ message: 'Public key is required' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.publicKey = publicKey;
+    await user.save();
+
+    res.status(200).json({ message: 'Public key stored successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error saving public key', error: error.message });
   }
 };

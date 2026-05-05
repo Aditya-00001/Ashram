@@ -1,17 +1,55 @@
 import React, { createContext, useState, useEffect } from 'react';
+// --- NEW: Import our crypto engine ---
+import { generateKeyPair, exportPublicKey, exportPrivateKey } from '../utils/cryptoUtils';
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  // FIX: Read directly from 'ashramUser' so we have the data instantly on load
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('ashramUser')) || null);
 
+  // --- NEW: E2EE KEY INITIALIZATION ---
   useEffect(() => {
-    const storedUser = localStorage.getItem('ashramUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+    const initializeKeys = async () => {
+      if (!user || !user.token) return;
+
+      try {
+        // 1. Check if the private key already exists in this browser
+        const storedPrivateKey = localStorage.getItem(`e2ee_priv_${user._id}`);
+        
+        if (!storedPrivateKey) {
+          console.log("🔒 E2EE: No private key found. Generating new Key Pair...");
+          
+          // 2. Generate a fresh ECDH Key Pair
+          const keyPair = await generateKeyPair();
+          
+          // 3. Export them to JSON Web Key (JWK) format
+          const publicKeyJWK = await exportPublicKey(keyPair.publicKey);
+          const privateKeyJWK = await exportPrivateKey(keyPair.privateKey);
+
+          // 4. LOCK THE PRIVATE KEY IN LOCAL STORAGE (Never send to server!)
+          localStorage.setItem(`e2ee_priv_${user._id}`, JSON.stringify(privateKeyJWK));
+
+          // 5. SEND THE PUBLIC KEY TO MONGODB
+          await fetch(`${import.meta.env.VITE_API_URL}/api/users/public-key`, {
+            method: 'PUT',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${user.token}`
+            },
+            body: JSON.stringify({ publicKey: publicKeyJWK })
+          });
+
+          console.log("✅ E2EE: Keys generated and Public Key registered with server.");
+        }
+      } catch (error) {
+        console.error("❌ E2EE Initialization Failed:", error);
+      }
+    };
+
+    initializeKeys();
+  }, [user]);
+
   // --- NEW: Verify Email Function ---
   const verifyEmail = async (email, code) => {
     const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/verify-email`, {
@@ -23,7 +61,6 @@ export const AuthProvider = ({ children }) => {
     const data = await response.json();
 
     if (response.ok) {
-      // Once verified, the backend sends back the login token. Log them in!
       setUser(data); 
       localStorage.setItem('ashramUser', JSON.stringify(data));
       return { success: true, role: data.role }; 
@@ -33,7 +70,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   // --- NEW: Registration Function ---
-  // Inside AuthContext.jsx
   const register = async (name, email, password) => {
     const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
       method: 'POST',
@@ -44,7 +80,6 @@ export const AuthProvider = ({ children }) => {
     const data = await response.json();
 
     if (response.ok) {
-      // REMOVED auto-login logic here. Just return success!
       return { success: true }; 
     } else {
       return { success: false, message: data.message };
@@ -75,7 +110,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('ashramUser');
   };
 
-  // DON'T FORGET to add 'register' to this list!
   return (
     <AuthContext.Provider value={{ user, setUser, login, register, verifyEmail, logout }}>
       {children}

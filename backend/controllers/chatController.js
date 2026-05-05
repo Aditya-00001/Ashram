@@ -7,7 +7,7 @@ import ChatMessage from '../models/ChatMessage.js';
 export const sendMessage = async (req, res) => {
   try {
     // 1. Extract 'attachment' from the incoming request body!
-    const { receiverId, conversationId, text, attachment } = req.body; 
+    const { receiverId, conversationId, text, iv, attachment } = req.body;
     const senderId = req.user._id;
 
     let conversation;
@@ -30,17 +30,19 @@ export const sendMessage = async (req, res) => {
     if (!conversation) return res.status(400).json({ message: "Invalid chat request" });
 
     // 2. Add the attachment to the new message document!
+    // Save it to the database
     const newMessage = new ChatMessage({
       conversationId: conversation._id,
       sender: senderId,
       text: text,
-      attachment: attachment // <-- THIS IS THE MISSING PIECE!
+      iv: iv || [], // Save the IV!
+      attachment: attachment
     });
 
     const savedMessage = await newMessage.save();
 
     // 3. We also need to populate the sender name so groups know who sent the file!
-    const populatedMessage = await ChatMessage.findById(savedMessage._id).populate('sender', 'name');
+    const populatedMessage = await ChatMessage.findById(savedMessage._id).populate('sender', 'name publicKey');
 
     conversation.lastMessage = savedMessage._id;
     await conversation.save();
@@ -61,7 +63,7 @@ export const getConversations = async (req, res) => {
     const conversations = await Conversation.find({
       participants: { $in: [req.user._id] }
     })
-      .populate('participants', 'name email role') // Get the names of the people chatting
+      .populate('participants', 'name email role publicKey') // Get the names of the people chatting
       .populate('lastMessage')                     // Get the text of the last message
       .sort({ updatedAt: -1 });                    // Sort by newest first
 
@@ -85,7 +87,7 @@ export const getMessages = async (req, res) => {
       .sort({ createdAt: -1 }) 
       .skip(skip)
       .limit(limit)
-      .populate('sender', 'name'); // Populate sender name for group chats!
+      .populate('sender', 'name publicKey'); // Populate sender name and public key for group chats!
 
     // 2. We need to tell the frontend if there are more messages to load
     const totalMessages = await ChatMessage.countDocuments({ conversationId: req.params.conversationId });

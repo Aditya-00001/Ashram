@@ -1,8 +1,113 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { 
+  importPrivateKey, 
+  importPublicKey, 
+  deriveSharedSecret, 
+  encryptMessage,
+  decryptMessage 
+} from '../utils/cryptoUtils';
 import EmojiPicker from 'emoji-picker-react';
 import io from 'socket.io-client';
 import './Chat.css';
+
+// ==========================================
+// 🔓 E2EE DECRYPTION COMPONENT 
+// ==========================================
+const MessageBubble = ({ msg, activeChat, user, renderTextWithLinks, setSandboxFile, setShowDisclaimer }) => {
+  const [displayText, setDisplayText] = useState('');
+  const [isDecrypting, setIsDecrypting] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const decrypt = async () => {
+      // Check if it is an encrypted E2EE message (has IV and text looks like an array)
+      if (!activeChat.isGroup && msg.iv && msg.iv.length > 0 && msg.text?.startsWith('[')) {
+        if (isMounted) setIsDecrypting(true);
+        try {
+          // 1. Identify the other person
+          const receiver = activeChat.participants.find(p => p._id !== user._id);
+          if (!receiver || !receiver.publicKey) {
+            if (isMounted) setDisplayText("🔒 [Encrypted - Key Missing]");
+            return;
+          }
+
+          // 2. Fetch keys and derive the Shared Secret
+          const myPrivKeyJWK = JSON.parse(localStorage.getItem(`e2ee_priv_${user._id}`));
+          const myPrivKey = await importPrivateKey(myPrivKeyJWK);
+          const theirPubKey = await importPublicKey(receiver.publicKey);
+          const sharedSecret = await deriveSharedSecret(myPrivKey, theirPubKey);
+
+          // 3. Decrypt the Ciphertext array
+          const ciphertextArray = JSON.parse(msg.text);
+          const plainText = await decryptMessage(ciphertextArray, msg.iv, sharedSecret);
+          
+          if (isMounted) setDisplayText(plainText);
+        } catch (err) {
+          console.error("Decryption err", err);
+          if (isMounted) setDisplayText("🔒 [Decryption Failed]");
+        } finally {
+          if (isMounted) setIsDecrypting(false);
+        }
+      } else {
+        // Not encrypted (Group chat or older plain text message)
+        if (isMounted) setDisplayText(msg.text);
+      }
+    };
+
+    decrypt();
+    return () => { isMounted = false; };
+  }, [msg, activeChat, user._id]);
+
+  const isMine = msg.sender === user._id || (msg.sender && msg.sender._id === user._id);
+  const senderName = msg.sender?.name || 'Member';
+
+  return (
+    <div className={`message-bubble ${isMine ? 'mine' : 'theirs'}`}>
+      {activeChat.isGroup && !isMine && (
+        <strong style={{ display: 'block', fontSize: '0.8rem', color: '#e67e22', marginBottom: '3px' }}>
+          {senderName}
+        </strong>
+      )}
+      
+      {/* --- ATTACHMENT RENDERING --- */}
+      {msg.attachment && (
+        <div style={{ marginBottom: displayText ? '10px' : '0' }}>
+          {msg.attachment.fileType === 'image' && (
+            <img src={msg.attachment.url} alt="attachment" style={{ maxWidth: '100%', borderRadius: '8px', maxHeight: '250px' }} />
+          )}
+          
+          {(msg.attachment.fileType === 'video' || msg.attachment.fileType === 'document') && (
+            <div 
+              onClick={() => {
+                setSandboxFile(msg.attachment);
+                if (msg.attachment.fileType === 'document' || msg.attachment.fileType === 'video') {
+                  setShowDisclaimer(true);
+                }
+              }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '8px', color: 'white', cursor: 'pointer', border: '1px solid #444' }}
+            >
+              <span style={{ fontSize: '1.5rem' }}>{msg.attachment.fileType === 'video' ? '🎥' : '📄'}</span>
+              <span style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>{msg.attachment.fileName}</span>
+              <span style={{ fontSize: '0.7rem', color: '#e67e22', marginLeft: '5px' }}>(Click to View)</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* --- TEXT RENDERING (Handles Loading State) --- */}
+      {isDecrypting ? (
+         <p style={{ color: '#888', fontStyle: 'italic', fontSize: '0.9rem' }}>🔒 Decrypting...</p>
+      ) : (
+         displayText && <p>{renderTextWithLinks(displayText)}</p>
+      )}
+      
+      <span className="timestamp">
+        {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+      </span>
+    </div>
+  );
+};
 
 export default function Chat() {
   const { user } = useContext(AuthContext);
@@ -81,7 +186,6 @@ export default function Chat() {
     return () => socketRef.current.disconnect(); 
   }, [user]);
 
-  // --- 2. FETCH MESSAGES ---
   // --- 2. FETCH MESSAGES ---
   useEffect(() => {
     if (!activeChat || activeChat.isNew) return;
@@ -182,15 +286,53 @@ export default function Chat() {
     });
   };
 
-  // --- 4. SEND MESSAGE ---
+  // --- 4. SEND MESSAGE (NOW WITH E2EE!) ---
   const handleSendMessage = async (e) => {
-    if (e) e.preventDefault(); // Make 'e' optional in case we send just an attachment
-    
-    // Require EITHER text OR an attachment to send
+    if (e) e.preventDefault();
     if (!newMessage.trim() && !selectedFile) return; 
     if (!activeChat) return;
 
     const receiver = activeChat.isGroup ? null : activeChat.participants.find(p => p._id !== user._id);
+    
+    // Variables to hold our payload
+    let textToSend = newMessage;
+    let ivToSend = [];
+
+    // ==========================================
+    // 🔒 E2EE ENCRYPTION BLOCK (1-on-1 Chats Only)
+    // ==========================================
+    if (!activeChat.isGroup && receiver) {
+      if (!receiver.publicKey) {
+        alert("This user hasn't updated their app to support encryption yet!");
+        return;
+      }
+
+      try {
+        // 1. Get My Private Key from LocalStorage
+        const myPrivKeyJWK = JSON.parse(localStorage.getItem(`e2ee_priv_${user._id}`));
+        const myPrivKey = await importPrivateKey(myPrivKeyJWK);
+        
+        // 2. Get Their Public Key from the active chat data
+        const theirPubKey = await importPublicKey(receiver.publicKey);
+        
+        // 3. Derive the Shared Secret!
+        const sharedSecret = await deriveSharedSecret(myPrivKey, theirPubKey);
+        
+        // 4. Encrypt the message text
+        const encryptedData = await encryptMessage(newMessage, sharedSecret);
+        
+        // 5. Convert ciphertext array to a JSON string so MongoDB can store it as a standard String
+        textToSend = JSON.stringify(encryptedData.ciphertext);
+        ivToSend = encryptedData.iv;
+        
+        console.log("🔒 Message Encrypted Successfully!");
+      } catch (err) {
+        console.error("Encryption failed:", err);
+        alert("Failed to encrypt message. Connection is not secure.");
+        return; // Stop the send if encryption fails!
+      }
+    }
+    // ==========================================
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/send`, {
@@ -199,8 +341,9 @@ export default function Chat() {
         body: JSON.stringify({ 
           receiverId: receiver ? receiver._id : null, 
           conversationId: activeChat.isNew ? null : activeChat._id,
-          text: newMessage,
-          attachment: selectedFile // --- NEW: Attach the file data! ---
+          text: textToSend,       // This is now scrambled ciphertext!
+          iv: ivToSend,           // The IV needed for decryption
+          attachment: selectedFile 
         })
       });
 
@@ -632,7 +775,16 @@ export default function Chat() {
                 <div className="convo-avatar">{chatName.charAt(0)}</div>
                 <div className="convo-info">
                   <h4>{chatName} {convo.isGroup && <span style={{fontSize:'0.7rem', color: '#e67e22'}}>(Group)</span>}</h4>
-                  <p>{convo.lastMessage ? convo.lastMessage.text : 'No messages yet.'}</p>
+                  
+                  {/* --- NEW: Hide Ciphertext in the Sidebar Preview --- */}
+                  <p>
+                    {convo.lastMessage 
+                      ? (convo.lastMessage.iv && convo.lastMessage.iv.length > 0 
+                          ? '🔒 Encrypted Message' 
+                          : convo.lastMessage.text) 
+                      : 'No messages yet.'}
+                  </p>
+
                 </div>
               </div>
             );
@@ -688,63 +840,17 @@ export default function Chat() {
                 </div>
               )}
 
-              {messages.map((msg, index) => {
-                const isMine = msg.sender === user._id || (msg.sender && msg.sender._id === user._id);
-                // We populated the sender in the backend, so we can pull the name directly!
-                const senderName = msg.sender?.name || 'Member';
-                
-                return (
-                  <div key={msg._id || index} className={`message-bubble ${isMine ? 'mine' : 'theirs'}`}>
-                    {activeChat.isGroup && !isMine && (
-                      <strong style={{ display: 'block', fontSize: '0.8rem', color: '#e67e22', marginBottom: '3px' }}>
-                        {senderName}
-                      </strong>
-                    )}
-                    
-                    {/* --- ATTACHMENT RENDERING --- */}
-                    {msg.attachment && (
-                      <div style={{ marginBottom: msg.text ? '10px' : '0' }}>
-                        {msg.attachment.fileType === 'image' && (
-                          <img src={msg.attachment.url} alt="attachment" style={{ maxWidth: '100%', borderRadius: '8px', maxHeight: '250px' }} />
-                        )}
-                        
-                        {/* Videos and Documents now trigger the Sandbox! */}
-                        {(msg.attachment.fileType === 'video' || msg.attachment.fileType === 'document') && (
-                          <div 
-                            onClick={() => {
-                              setSandboxFile(msg.attachment);
-                              
-                              // TEMPORARY TEST: We removed '&& !isMine' so you can test it on your own files!
-                              // Make sure to add '&& !isMine' back before you deploy to production.
-                              if (msg.attachment.fileType === 'document' || msg.attachment.fileType === 'video') {
-                                setShowDisclaimer(true);
-                              }
-                            }}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '8px', color: 'white', cursor: 'pointer', border: '1px solid #444' }}
-                          >
-                            <span style={{ fontSize: '1.5rem' }}>
-                              {msg.attachment.fileType === 'video' ? '🎥' : '📄'}
-                            </span>
-                            <span style={{ fontSize: '0.9rem', wordBreak: 'break-all' }}>
-                              {msg.attachment.fileName}
-                            </span>
-                            <span style={{ fontSize: '0.7rem', color: '#e67e22', marginLeft: '5px' }}>
-                              (Click to View)
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* --- UPDATED: Render text with parsed links! --- */}
-                    {msg.text && <p>{renderTextWithLinks(msg.text)}</p>}
-                    
-                    <span className="timestamp">
-                      {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                    </span>
-                  </div>
-                );
-              })}
+              {messages.map((msg, index) => (
+                <MessageBubble 
+                  key={msg._id || index} 
+                  msg={msg} 
+                  activeChat={activeChat} 
+                  user={user} 
+                  renderTextWithLinks={renderTextWithLinks}
+                  setSandboxFile={setSandboxFile}
+                  setShowDisclaimer={setShowDisclaimer}
+                />
+              ))}
               <div ref={messagesEndRef} />
             </div>
 
