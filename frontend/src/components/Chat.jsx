@@ -9,7 +9,7 @@ import {
 } from '../utils/cryptoUtils';
 import EmojiPicker from 'emoji-picker-react';
 import io from 'socket.io-client';
-import './Chat.css';
+import '../styles/Chat.css';
 import CameraCapture from './CameraCapture';
 import CreatePollModal from './CreatePollModal';
 import ChatVaultModal from './ChatVaultModal';

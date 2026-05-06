@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import './Contact.css';
+import '../styles/Contact.css';
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');

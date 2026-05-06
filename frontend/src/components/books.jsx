@@ -1,5 +1,5 @@
 import React from 'react';
-import './Books.css';
+import '../styles/Books.css';
 
 export default function Books() {
   // Array holding your two books. You can easily edit these placeholders later!

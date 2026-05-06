@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import './Contact.css'; // We can reuse the form styling from the contact page!
+import '../styles/Contact.css'; // We can reuse the form styling from the contact page!
 
 export default function Login() {
   const [email, setEmail] = useState('');

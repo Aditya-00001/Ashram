@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import './Contact.css'; 
+import '../styles/Contact.css'; 
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import './UserDashboard.css';
+import '../styles/UserDashboard.css';
 import { jsPDF } from "jspdf";
 
 export default function UserDashboard() {

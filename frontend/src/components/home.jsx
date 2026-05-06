@@ -1,5 +1,5 @@
 import React, {useRef, useState, useEffect} from 'react';
-import './Home.css';
+import '../styles/Home.css';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';

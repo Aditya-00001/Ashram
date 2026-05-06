@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import './Contact.css'; // Reusing your beautiful dark form styling
+import '../styles/Contact.css'; // Reusing your beautiful dark form styling
 
 export default function VerifyEmail() {
   const [code, setCode] = useState('');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import './Admin.css';
+import '../styles/Admin.css';
 
 // --- TIME FORMATTING HELPERS ---
 // Converts "6:30 PM" to "18:30" for the scrollable clock input

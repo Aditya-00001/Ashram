@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import './Contact.css'; // Reusing the dark theme form styling
+import '../styles/Contact.css'; // Reusing the dark theme form styling
 
 export default function Register() {
   const [name, setName] = useState('');

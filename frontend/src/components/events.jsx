@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './Events.css';
+import '../styles/Events.css';
 
 export default function Events() {
   const [events, setEvents] = useState([]);
