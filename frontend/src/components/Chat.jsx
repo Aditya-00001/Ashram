@@ -274,17 +274,48 @@ export default function Chat() {
 
     socketRef.current.on('user_stopped_typing', () => setTypingUser(null));
 
-    socketRef.current.on('receive_message', (incomingMessage) => {
-      setMessages((prevMessages) => [...prevMessages, incomingMessage]);
-      setConversations((prevConvos) => 
-        prevConvos.map(convo => 
-          convo._id === incomingMessage.conversationId ? { ...convo, lastMessage: incomingMessage } : convo
-        ).sort((a, b) => {
-           const dateA = a._id === incomingMessage.conversationId ? new Date() : new Date(a.updatedAt);
-           const dateB = b._id === incomingMessage.conversationId ? new Date() : new Date(b.updatedAt);
-           return dateB - dateA;
-        })
-      );
+    socketRef.current.on('receive_message', async (incomingMessage) => {
+      
+      // 1. Only append to the open chat window if it matches!
+      if (activeChatRef.current && activeChatRef.current._id === incomingMessage.conversationId) {
+        setMessages((prevMessages) => [...prevMessages, incomingMessage]);
+        
+        // =======================================================
+        // --- FIXED: AUTO-READ RECEIPT (DATABASE + SOCKET) ---
+        // =======================================================
+        try {
+          // 1. Tell the database this specific chat is now read
+          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/read/${incomingMessage.conversationId}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${user.token}` }
+          });
+          
+          if (res.ok) {
+            // 2. ONLY emit the socket event after the DB is updated!
+            // This ensures the sender's React state has had time to render the new message first.
+            socketRef.current.emit('mark_as_read', { 
+              conversationId: incomingMessage.conversationId, 
+              readerId: user._id 
+            });
+          }
+        } catch (err) {
+          console.error("Auto-read background update failed", err);
+        }
+      }
+
+      // 2. Always update the sidebar inbox to show the latest message and bump it to the top
+      setConversations((prevConvos) => {
+        let isExisting = false;
+        const updatedConvos = prevConvos.map(convo => {
+          if (convo._id === incomingMessage.conversationId) {
+            isExisting = true;
+            return { ...convo, lastMessage: incomingMessage, updatedAt: new Date().toISOString() };
+          }
+          return convo;
+        });
+
+        return updatedConvos.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+      });
     });
 
     // --- NEW: LISTEN FOR UPDATED MESSAGES (LIKE POLL VOTES) ---
@@ -372,6 +403,7 @@ export default function Chat() {
   }, [messages]);
 
   // const handleChatSelect = (convo) => {
+    // if (activeChat && activeChat._id === convo._id) return;
   //   setActiveChat(convo);
   //   setMessages([]); // Clear instantly to prevent UI flickering
   //   setMessagePage(1); // Reset pagination
@@ -518,12 +550,31 @@ export default function Chat() {
       if (res.ok) {
         const savedMessage = await res.json();
         
+        let actualConvoId = savedMessage.conversationId;
+
         if (activeChat.isNew) {
-          setActiveChat({ ...activeChat, _id: savedMessage.conversationId, isNew: false });
-          socketRef.current.emit('join_chat', savedMessage.conversationId);
+          setActiveChat({ ...activeChat, _id: actualConvoId, isNew: false });
+          socketRef.current.emit('join_chat', actualConvoId);
         }
 
+        // Broadcast to everyone else
         socketRef.current.emit('send_message', savedMessage);
+        
+        // =========================================================
+        // --- INSTANT AUTO-REACTIVE UPDATE FOR THE SENDER ---
+        // =========================================================
+        
+        // 1. Instantly append the message to our own chat screen
+        setMessages((prev) => [...prev, savedMessage]);
+
+        // 2. Instantly update our sidebar so our sent message shows up and bumps to the top
+        setConversations((prevConvos) => {
+          return prevConvos.map(convo => 
+            (convo._id === actualConvoId || convo.isNew) 
+              ? { ...convo, _id: actualConvoId, lastMessage: savedMessage, isNew: false, updatedAt: new Date().toISOString() } 
+              : convo
+          ).sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+        });
         
         // --- RESET EVERYTHING ---
         setNewMessage('');
