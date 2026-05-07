@@ -114,9 +114,28 @@ app.get('/', (req, res) => {
 //   console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 // });
 
+const onlineUsers = new Set();
+
 // --- NEW: Socket.io Connection Logic ---
 io.on('connection', (socket) => {
   console.log(`🔌 A user connected: ${socket.id}`);
+
+
+  socket.on('user_online', (userId) => {
+    socket.userId = userId; // Store ID on the socket instance
+    onlineUsers.add(userId);
+    io.emit('online_users_list', Array.from(onlineUsers)); // Broadcast to everyone
+  });
+
+  // 2. Handle Typing Status
+  socket.on('typing_start', (data) => {
+    // data: { conversationId, userName }
+    socket.to(data.conversationId).emit('user_typing', data);
+  });
+
+  socket.on('typing_stop', (data) => {
+    socket.to(data.conversationId).emit('user_stopped_typing', data);
+  });
 
   // When a user opens a specific chat, they join a "room" using the Conversation ID
   socket.on('join_chat', (conversationId) => {
@@ -137,7 +156,19 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`🔌 User disconnected: ${socket.id}`);
+    if (socket.userId) {
+      onlineUsers.delete(socket.userId);
+      io.emit('online_users_list', Array.from(onlineUsers));
+    }
   });
+
+  // --- NEW: Handle Read Receipts ---
+  socket.on('mark_as_read', (data) => {
+    // data should contain { conversationId, readerId }
+    // Broadcast to the room so the sender knows their message was read
+    socket.to(data.conversationId).emit('messages_read', data);
+  });
+  
 });
 
 // --- UPDATED: Make sure httpServer is listening, NOT app! ---

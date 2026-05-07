@@ -285,3 +285,28 @@ export const getChatMedia = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch chat media', error: error.message });
   }
 };
+
+// @desc    Mark all messages in a conversation as read
+// @route   PUT /api/chat/read/:conversationId
+// @access  Private
+export const markAsRead = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user._id;
+
+    // Update all messages in this chat where the current user is NOT the sender
+    // and isRead is currently false
+    await ChatMessage.updateMany(
+      { 
+        conversationId, 
+        sender: { $ne: userId }, 
+        isRead: false 
+      },
+      { $set: { isRead: true } }
+    );
+
+    res.status(200).json({ message: 'Messages marked as read' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update read status', error: error.message });
+  }
+};

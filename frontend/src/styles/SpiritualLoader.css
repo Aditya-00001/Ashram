@@ -1,0 +1,48 @@
+.spiritual-loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.spiritual-loader-container.large {
+  height: 100vh;
+  width: 100%;
+  background-color: #0a0a0a;
+}
+
+.mandala-wrapper {
+  width: 120px;
+  height: 120px;
+  animation: rotateMandala 10s linear infinite;
+}
+
+.mandala-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.om-symbol {
+  font-family: serif;
+  animation: pulseOm 2s ease-in-out infinite;
+}
+
+.loader-text {
+  margin-top: 20px;
+  color: #e67e22;
+  font-family: 'Cinzel', serif; /* Or any spiritual font you like */
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+@keyframes rotateMandala {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulseOm {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}

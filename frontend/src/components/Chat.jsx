@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { 
   importPrivateKey, 
@@ -13,7 +13,7 @@ import '../styles/Chat.css';
 import CameraCapture from './CameraCapture';
 import CreatePollModal from './CreatePollModal';
 import ChatVaultModal from './ChatVaultModal';
-
+import SpiritualLoader from './SpiritualLoader';
 // ==========================================
 // 🔓 E2EE DECRYPTION COMPONENT 
 // ==========================================
@@ -24,39 +24,43 @@ const MessageBubble = ({ msg, activeChat, user, renderTextWithLinks, setSandboxF
   useEffect(() => {
     let isMounted = true;
     const decrypt = async () => {
-      // Check if it is an encrypted E2EE message (has IV and text looks like an array)
-      if (!activeChat.isGroup && msg.iv && msg.iv.length > 0 && msg.text?.startsWith('[')) {
-        if (isMounted) setIsDecrypting(true);
-        try {
-          // 1. Identify the other person
-          const receiver = activeChat.participants.find(p => p._id !== user._id);
-          if (!receiver || !receiver.publicKey) {
-            if (isMounted) setDisplayText("🔒 [Encrypted - Key Missing]");
-            return;
-          }
-
-          // 2. Fetch keys and derive the Shared Secret
-          const myPrivKeyJWK = JSON.parse(localStorage.getItem(`e2ee_priv_${user._id}`));
-          const myPrivKey = await importPrivateKey(myPrivKeyJWK);
-          const theirPubKey = await importPublicKey(receiver.publicKey);
-          const sharedSecret = await deriveSharedSecret(myPrivKey, theirPubKey);
-
-          // 3. Decrypt the Ciphertext array
-          const ciphertextArray = JSON.parse(msg.text);
-          const plainText = await decryptMessage(ciphertextArray, msg.iv, sharedSecret);
-          
-          if (isMounted) setDisplayText(plainText);
-        } catch (err) {
-          console.error("Decryption err", err);
-          if (isMounted) setDisplayText("🔒 [Decryption Failed]");
-        } finally {
-          if (isMounted) setIsDecrypting(false);
+    // 1. Ensure we have a valid 1-on-1 chat and encrypted text
+    if (!activeChat.isGroup && msg.iv?.length > 0 && msg.text?.startsWith('[')) {
+      if (isMounted) setIsDecrypting(true);
+      try {
+        const receiver = activeChat.participants.find(p => p._id !== user._id);
+        
+        // Safety Check: Do we have the other person's key?
+        if (!receiver || !receiver.publicKey) {
+          if (isMounted) setDisplayText("🔒 [Key Missing]");
+          return;
         }
-      } else {
-        // Not encrypted (Group chat or older plain text message)
-        if (isMounted) setDisplayText(msg.text);
+
+        const myPrivKeyRaw = localStorage.getItem(`e2ee_priv_${user._id}`);
+        if (!myPrivKeyRaw) {
+          if (isMounted) setDisplayText("🔒 [Device Not Authorized]");
+          return;
+        }
+
+        const myPrivKey = await importPrivateKey(JSON.parse(myPrivKeyRaw));
+        const theirPubKey = await importPublicKey(receiver.publicKey);
+        const sharedSecret = await deriveSharedSecret(myPrivKey, theirPubKey);
+
+        const ciphertextArray = JSON.parse(msg.text);
+        const plainText = await decryptMessage(ciphertextArray, msg.iv, sharedSecret);
+        
+        if (isMounted) setDisplayText(plainText);
+      } catch (err) {
+        // Log the error once for debugging, but show a clean UI
+        console.error("Decryption failed for message:", msg._id, err);
+        if (isMounted) setDisplayText("🔒 [Decryption Error - Stale Keys]");
+      } finally {
+        if (isMounted) setIsDecrypting(false);
       }
-    };
+    } else {
+      if (isMounted) setDisplayText(msg.text);
+    }
+  };
 
     decrypt();
     return () => { isMounted = false; };
@@ -164,6 +168,13 @@ const MessageBubble = ({ msg, activeChat, user, renderTextWithLinks, setSandboxF
       
       <span className="timestamp">
         {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+        
+        {/* --- NEW: READ RECEIPT TICKS --- */}
+        {isMine && (
+          <span style={{ marginLeft: '5px', fontSize: '0.8rem', color: msg.isRead ? '#000080' : '#FFFFFF' }}>
+            {msg.isRead ? '✓✓' : '✓'}
+          </span>
+        )}
       </span>
     </div>
   );
@@ -175,6 +186,12 @@ export default function Chat() {
   // --- STATE ---
   const [conversations, setConversations] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
+
+  const activeChatRef = useRef(activeChat);
+  useEffect(() => {
+    activeChatRef.current = activeChat;
+  }, [activeChat]);
+
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
 
@@ -222,6 +239,15 @@ export default function Chat() {
   const [showPollModal, setShowPollModal] = useState(false);
 
   const [showVault, setShowVault] = useState(false);
+
+  const [loadingMessages, setLoadingMessages] = useState(false);
+
+  // const [loadingConversations, setLoadingConversations] = useState(false);
+
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [typingUser, setTypingUser] = useState(null); // { name, convoId }
+  const typingTimeoutRef = useRef(null);
+
   
   // --- 1. INITIALIZE SOCKET & FETCH INBOX ---
   useEffect(() => {
@@ -235,6 +261,18 @@ export default function Chat() {
       if (res.ok) setConversations(await res.json());
     };
     fetchConversations();
+
+    socketRef.current.emit('user_online', user._id);
+
+    socketRef.current.on('online_users_list', (list) => setOnlineUsers(list));
+    
+    socketRef.current.on('user_typing', (data) => {
+      if (activeChatRef.current && activeChatRef.current._id === data.conversationId) {
+        setTypingUser(data.userName);
+      }
+    });
+
+    socketRef.current.on('user_stopped_typing', () => setTypingUser(null));
 
     socketRef.current.on('receive_message', (incomingMessage) => {
       setMessages((prevMessages) => [...prevMessages, incomingMessage]);
@@ -256,39 +294,89 @@ export default function Chat() {
       );
     });
 
+    socketRef.current.on('messages_read', (data) => {
+      // Only update messages if the user currently has that specific chat open
+      if (activeChatRef.current && activeChatRef.current._id === data.conversationId) {
+        setMessages(prev => prev.map(msg => ({ ...msg, isRead: true })));
+      }
+    });
+
     return () => socketRef.current.disconnect(); 
   }, [user]);
+
+  // Function to handle the typing event
+  const handleTyping = () => {
+    if (!activeChat) return;
+
+    socketRef.current.emit('typing_start', { 
+      conversationId: activeChat._id, 
+      userName: user.name 
+    });
+
+    // Clear existing timeout and set a new one to stop typing indicator after 2 seconds
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      socketRef.current.emit('typing_stop', { conversationId: activeChat._id });
+    }, 2000);
+  };
+
+  const handleMarkAsRead = useCallback(async (convoId) => {
+  if (!convoId) return;
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/read/${convoId}`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${user.token}` }
+    });
+    
+    if (res.ok) {
+      socketRef.current.emit('mark_as_read', { conversationId: convoId, readerId: user._id });
+      
+      setConversations(prev => prev.map(c => 
+        c._id === convoId ? { ...c, lastMessage: { ...c.lastMessage, isRead: true } } : c
+      ));
+    }
+  } catch (err) {
+    console.error("Read receipt error", err);
+  }
+}, [user.token, user._id]);
 
   // --- 2. FETCH MESSAGES ---
   useEffect(() => {
     if (!activeChat || activeChat.isNew) return;
 
     const fetchMessages = async () => {
+      // Only show the big loader for the initial load (page 1)
+      if (messagePage === 1) setLoadingMessages(true); 
+
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/${activeChat._id}?page=${messagePage}&limit=50`, {
         headers: { 'Authorization': `Bearer ${user.token}` }
       });
+      
       if (res.ok) {
         const data = await res.json();
-        // If it's page 1, replace the messages. If it's page 2+, append them to the TOP!
         setMessages(prev => messagePage === 1 ? data.messages : [...data.messages, ...prev]);
         setHasMoreMessages(data.hasMore);
       }
+      setLoadingMessages(false); // Turn off loader
     };
 
     fetchMessages();
     socketRef.current.emit('join_chat', activeChat._id);
-  }, [activeChat, messagePage, user.token]);
+    // --- TRIGGER READ RECEIPT ---
+    handleMarkAsRead(activeChat._id);
+  }, [activeChat, messagePage, user.token,handleMarkAsRead]);
   // --- 3. AUTO-SCROLL TO BOTTOM ---
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [messages]);
 
-  const handleChatSelect = (convo) => {
-    handleChatSelect(convo);
-    setMessages([]); // Clear instantly to prevent UI flickering
-    setMessagePage(1); // Reset pagination
-    setHasMoreMessages(true);
-  };
+  // const handleChatSelect = (convo) => {
+  //   setActiveChat(convo);
+  //   setMessages([]); // Clear instantly to prevent UI flickering
+  //   setMessagePage(1); // Reset pagination
+  //   setHasMoreMessages(true);
+  // };
 
   const handleCloseChat = () => {
     setActiveChat(null);
@@ -446,6 +534,8 @@ export default function Chat() {
       console.error("Failed to send message", err);
     }
   };
+
+  
 
   const handleSendPoll = async (pollData) => {
     try {
@@ -897,18 +987,19 @@ export default function Chat() {
           {conversations.length === 0 && !showNewChat && <p style={{color: '#888', padding: '20px'}}>No conversations yet.</p>}
           
           {conversations.map(convo => {
-            // --- UPDATED: Display Group Name or Individual Name! ---
-            const chatName = convo.isGroup 
-              ? convo.groupName 
-              : convo.participants.find(p => p._id !== user._id)?.name || 'Unknown User';
+            const participant = convo.participants.find(p => p._id !== user._id);
+            const chatName = convo.isGroup ? convo.groupName : participant?.name || 'Unknown';
             
+            // Check if the other person is online
+            const isOnline = !convo.isGroup && onlineUsers.includes(participant?._id);
+
             return (
-              <div 
-                key={convo._id} 
-                className={`conversation-item ${activeChat?._id === convo._id ? 'active' : ''}`}
-                onClick={() => setActiveChat(convo)}
-              >
-                <div className="convo-avatar">{chatName.charAt(0)}</div>
+              <div key={convo._id} className={`conversation-item ...`} onClick={() => setActiveChat(convo)}>
+                <div className="convo-avatar">
+                  {chatName.charAt(0)}
+                  {/* --- NEW: GREEN DOT --- */}
+                  {isOnline && <div className="online-status-dot" />}
+                </div>
                 <div className="convo-info">
                   <h4>{chatName} {convo.isGroup && <span style={{fontSize:'0.7rem', color: '#e67e22'}}>(Group)</span>}</h4>
                   
@@ -946,6 +1037,12 @@ export default function Chat() {
                     : activeChat.participants.find(p => p._id !== user._id)?.name}
                 </h3>
 
+                {typingUser && (
+                  <span style={{ fontSize: '0.8rem', color: '#e67e22', fontStyle: 'italic', marginLeft: '10px' }}>
+                    {typingUser} is typing...
+                  </span>
+                )}
+
                 {/* --- NEW: Add Member Button (Only visible to Group Admins or Super Admins) --- */}
                 {activeChat.isGroup && (activeChat.groupAdmin === user._id || user.role === 'superadmin') && (
                   <button 
@@ -973,7 +1070,14 @@ export default function Chat() {
             
             <div className="chat-messages">
               {/* --- NEW: LOAD MORE MESSAGES --- */}
-              {hasMoreMessages && !activeChat.isNew && (
+              {/* --- ADD THE LOADER HERE --- */}
+              {loadingMessages ? (
+                <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                  <SpiritualLoader size="small" message="Opening Sacred Space..." />
+                </div>
+              ) : (
+                <>
+                {hasMoreMessages && !activeChat.isNew && (
                 <div style={{ textAlign: 'center', marginBottom: '15px' }}>
                   <button 
                     onClick={() => setMessagePage(prev => prev + 1)}
@@ -996,6 +1100,8 @@ export default function Chat() {
                   handleVote={handleVote} /* <--- NEW PROP! */
                 />
               ))}
+              </>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
@@ -1112,7 +1218,7 @@ export default function Chat() {
 
                 <textarea 
                   value={newMessage} 
-                  onChange={(e) => setNewMessage(e.target.value)} 
+                  onChange={(e) => { setNewMessage(e.target.value); handleTyping(); }} 
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey) {
                       e.preventDefault(); 
