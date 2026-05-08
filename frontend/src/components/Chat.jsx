@@ -217,6 +217,7 @@ export default function Chat() {
 
   // --- REFS ---
   const socketRef = useRef();
+  const candidateQueue = useRef([]);
   const messagesEndRef = useRef(null);
 
   // --- EMOJI STATE ---
@@ -248,7 +249,18 @@ export default function Chat() {
   const [typingUser, setTypingUser] = useState(null); // { name, convoId }
   const typingTimeoutRef = useRef(null);
 
-  
+  // --- WebRTC State ---
+  const [calling, setCalling] = useState(false);
+  const [receivingCall, setReceivingCall] = useState(false);
+  const [callAccepted, setCallAccepted] = useState(false);
+  const [callType, setCallType] = useState(null); // 'audio' or 'video'
+  const [callerInfo, setCallerInfo] = useState(null);
+
+  const myVideoRef = useRef();
+  const peerVideoRef = useRef();
+  const connectionRef = useRef();
+  const localStreamRef = useRef();
+
   // --- 1. INITIALIZE SOCKET & FETCH INBOX ---
   useEffect(() => {
     if (!user) return;
@@ -332,8 +344,167 @@ export default function Chat() {
       }
     });
 
+    // --- 📞 WebRTC INCOMING LISTENERS ---
+    socketRef.current.on('incoming_call', (data) => {
+      setReceivingCall(true);
+      setCallerInfo(data);
+      setCallType(data.callType);
+    });
+
+    socketRef.current.on('ice_candidate', (candidate) => {
+      // Use the ref from the top level
+      if (connectionRef.current && connectionRef.current.remoteDescription) {
+        connectionRef.current.addIceCandidate(new RTCIceCandidate(candidate))
+          .catch(e => console.error("Error adding received ice candidate", e));
+      } else {
+        candidateQueue.current.push(candidate);
+      }
+    });
+
+    socketRef.current.on('call_accepted', (signal) => {
+      setCallAccepted(true);
+      if (connectionRef.current) {
+        connectionRef.current.setRemoteDescription(new RTCSessionDescription(signal));
+      }
+    });
+
+    socketRef.current.on('call_ended', () => {
+      endCallLocally();
+    });
+
     return () => socketRef.current.disconnect(); 
   }, [user]);
+
+  const startCall = async (type) => {
+    setCallType(type);
+    setCalling(true);
+
+    try {
+      // 1. Get Media (Camera/Mic)
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: type === 'video', 
+        audio: true 
+      });
+      localStreamRef.current = stream;
+      if (myVideoRef.current) myVideoRef.current.srcObject = stream;
+
+      // 2. Create Peer Connection
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] // Free Google STUN server
+      });
+
+      // 3. Add tracks to connection
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      // 4. Handle ICE Candidates
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          socketRef.current.emit('ice_candidate', {
+            to: activeChat.participants.find(p => p._id !== user._id)._id,
+            candidate: event.candidate
+          });
+        }
+      };
+
+      // 5. Handle Incoming Stream
+      pc.ontrack = (event) => {
+        peerVideoRef.current.srcObject = event.streams[0];
+      };
+
+      // 6. Create Offer
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      socketRef.current.emit('call_user', {
+        userToCall: activeChat.participants.find(p => p._id !== user._id)._id,
+        signalData: offer,
+        from: user._id,
+        name: user.name,
+        callType: type
+      });
+
+      connectionRef.current = pc;
+    } catch (err) {
+      console.error("Failed to start call", err);
+      setCalling(false);
+    }
+  };
+
+  const acceptCall = async () => {
+    setCallAccepted(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: callType === 'video', 
+        audio: true 
+      });
+      localStreamRef.current = stream;
+      if (myVideoRef.current) myVideoRef.current.srcObject = stream;
+
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      });
+
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          socketRef.current.emit('ice_candidate', { to: callerInfo.from, candidate: event.candidate });
+        }
+      };
+
+      pc.ontrack = (event) => {
+        if (peerVideoRef.current) peerVideoRef.current.srcObject = event.streams[0];
+      };
+
+      await pc.setRemoteDescription(new RTCSessionDescription(callerInfo.signal));
+
+      // PROCESS QUEUED CANDIDATES
+      candidateQueue.current.forEach(candidate => {
+        pc.addIceCandidate(new RTCIceCandidate(candidate));
+      });
+      candidateQueue.current = []; // Clear the queue
+      
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      socketRef.current.emit('answer_call', { to: callerInfo.from, signal: answer });
+      connectionRef.current = pc;
+    } catch (err) {
+      console.error("Failed to accept call", err);
+    }
+  };
+
+  const rejectCall = () => {
+    socketRef.current.emit('end_call', { to: callerInfo.from });
+    setReceivingCall(false);
+    setCallerInfo(null);
+  };
+
+  const endCallLocally = (targetId = null) => {
+    // 1. If we are the one initiating the "hang up", notify the other user
+    if (targetId && socketRef.current) {
+      socketRef.current.emit('end_call', { to: targetId });
+    }
+
+    // 2. Close the PeerConnection
+    if (connectionRef.current) {
+      connectionRef.current.close();
+      connectionRef.current = null;
+    }
+
+    // 3. Stop all Camera/Mic tracks
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current = null;
+    }
+
+    // 4. Reset UI State
+    setCalling(false);
+    setReceivingCall(false);
+    setCallAccepted(false);
+    setCallerInfo(null);
+    setCallType(null);
+  };
 
   // Function to handle the typing event
   const handleTyping = () => {
@@ -1114,6 +1285,27 @@ export default function Chat() {
                 >
                   📁
                 </button>
+
+                {/* --- Chat Header Updates --- */}
+                {!activeChat.isGroup && (
+                  <div style={{ display: 'flex', gap: '15px', marginRight: '10px' }}>
+                    <button 
+                      onClick={() => startCall('audio')} 
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+                      title="Audio Call"
+                    >
+                      📞
+                    </button>
+                    <button 
+                      onClick={() => startCall('video')} 
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+                      title="Video Call"
+                    >
+                      📹
+                    </button>
+                  </div>
+                )}
+
               </div>
               
               <button className="close-chat-btn" onClick={handleCloseChat}>✕</button>
@@ -1172,6 +1364,35 @@ export default function Chat() {
             {isUploading && (
               <div style={{ padding: '5px 20px', backgroundColor: '#222', color: '#e67e22', fontSize: '0.8rem', fontStyle: 'italic' }}>
                 Uploading to secure cloud... Please wait.
+              </div>
+            )}
+
+            {receivingCall && !callAccepted && (
+              <div className="chat-modal-overlay" style={{ zIndex: 4000 }}>
+                <div className="chat-modal-content" style={{ textAlign: 'center', padding: '30px' }}>
+                  <div className="spiritual-loader-container small">
+                    <SpiritualLoader size="small" message="" />
+                  </div>
+                  <h2 style={{ color: '#e67e22', marginTop: '20px' }}>Incoming {callerInfo.callType} Call</h2>
+                  <p style={{ color: '#fff', fontSize: '1.2rem' }}>{callerInfo.name} is calling...</p>
+                  
+                  <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '30px' }}>
+                    <button 
+                      className="cancel-btn" 
+                      onClick={rejectCall} // This already emits 'end_call' in your code
+                      style={{ padding: '10px 30px' }}
+                    >
+                      Decline
+                    </button>
+                    <button 
+                      className="cta-button" 
+                      onClick={acceptCall}
+                      style={{ padding: '10px 30px', backgroundColor: '#2ecc71', border: 'none' }}
+                    >
+                      Accept
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1295,6 +1516,50 @@ export default function Chat() {
           </div>
         )}
       </div>
+        {/* =========================================
+              📞 ACTIVE CALL MODAL (FULL SCREEN)
+            ========================================= */}
+        {(calling || callAccepted) && (
+          <div className="chat-modal-overlay" style={{ zIndex: 5000, backgroundColor: '#000' }}>
+            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fff', marginBottom: '20px' }}>
+                <h3>{callType === 'video' ? 'Video Call' : 'Audio Call'} with {activeChat?.participants.find(p => p._id !== user._id)?.name || callerInfo?.name}</h3>
+                <button 
+                  onClick={() => {
+                    // Find the other person's ID to notify them
+                    const peerId = activeChat?.participants.find(p => p._id !== user._id)?._id || callerInfo?.from;
+                    endCallLocally(peerId);
+                  }} 
+                  style={{ backgroundColor: '#ff4757', border: 'none', color: 'white', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer' }}
+                >
+                  End Call
+                </button>
+              </div>
+
+              <div style={{ flex: 1, display: 'flex', gap: '20px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* My Video (Small Overlay) */}
+                <div style={{ width: callType === 'video' ? '300px' : '150px', aspectRatio: '16/9', backgroundColor: '#222', borderRadius: '12px', overflow: 'hidden', border: '2px solid #e67e22', position: 'relative' }}>
+                  <video playsInline muted ref={myVideoRef} autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <span style={{ position: 'absolute', bottom: '10px', left: '10px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: '4px' }}>You</span>
+                </div>
+
+                {/* Peer Video (Large) */}
+                {callAccepted ? (
+                  <div style={{ width: callType === 'video' ? '600px' : '150px', aspectRatio: '16/9', backgroundColor: '#111', borderRadius: '12px', overflow: 'hidden', border: '2px solid #444', position: 'relative' }}>
+                    <video playsInline ref={peerVideoRef} autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <span style={{ position: 'absolute', bottom: '10px', left: '10px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: '4px' }}>{activeChat?.participants.find(p => p._id !== user._id)?.name || callerInfo?.name}</span>
+                  </div>
+                ) : (
+                  <div style={{ color: '#888', textAlign: 'center' }}>
+                    <SpiritualLoader size="small" message="Waiting for response..." />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
     </div>
   );
 }

@@ -120,11 +120,40 @@ const onlineUsers = new Set();
 io.on('connection', (socket) => {
   console.log(`🔌 A user connected: ${socket.id}`);
 
+  // ==========================================
+  // 📞 WebRTC SIGNALING LISTENERS
+  // ==========================================
+  socket.on('call_user', (data) => {
+    socket.to(data.userToCall).emit('incoming_call', {
+      signal: data.signalData,
+      from: data.from,
+      name: data.name,
+      callType: data.callType
+    });
+  });
+
+  socket.on('answer_call', (data) => {
+    socket.to(data.to).emit('call_accepted', data.signal);
+  });
+
+  socket.on('ice_candidate', (data) => {
+    socket.to(data.to).emit('ice_candidate', data.candidate);
+  });
+
+  socket.on('end_call', (data) => {
+    socket.to(data.to).emit('call_ended');
+  });
+
 
   socket.on('user_online', (userId) => {
-    socket.userId = userId; // Store ID on the socket instance
+    socket.userId = userId; 
     onlineUsers.add(userId);
-    io.emit('online_users_list', Array.from(onlineUsers)); // Broadcast to everyone
+    
+    // --- CRITICAL FIX: Join a room named after the User ID ---
+    socket.join(userId); 
+    
+    io.emit('online_users_list', Array.from(onlineUsers)); 
+    console.log(`👤 User ${userId} is now reachable for calls.`);
   });
 
   // 2. Handle Typing Status
