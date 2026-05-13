@@ -18,7 +18,12 @@ const userSchema = new mongoose.Schema({
   resetPasswordToken: { type: String }, // Stores the token for forgot password
   resetPasswordExpire: { type: Date }, // Expiration time for the reset token
   // --- NEW: E2EE PUBLIC KEY ---
-  publicKey: { type: Object, default: null }
+  publicKey: { type: Object, default: null },
+
+  // --- NEW: PWA PUSH SUBSCRIPTION ---
+  // We store this as an Object because it contains the endpoint, expirationTime, and keys (p256dh, auth)
+  pushSubscription: { type: Object, default: null }
+
 }, { 
   timestamps: true 
 });

@@ -8,6 +8,33 @@ import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 
+import webpush from 'web-push';
+
+webpush.setVapidDetails(
+  process.env.VAPID_EMAIL,
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
+
+// Inside your sendMessage controller logic:
+const sendPushNotification = async (recipientId, messagePayload) => {
+  const recipient = await User.findById(recipientId);
+  if (recipient && recipient.pushSubscription) {
+    try {
+      await webpush.sendNotification(
+        recipient.pushSubscription,
+        JSON.stringify({
+          title: `New Message from ${messagePayload.senderName}`,
+          body: messagePayload.text,
+          url: '/chat'
+        })
+      );
+    } catch (error) {
+      console.error('Error sending push notification', error);
+    }
+  }
+};
+
 // --- ROUTE IMPORTS ---
 import authRoutes from './routes/authRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';

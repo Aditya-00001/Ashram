@@ -1,0 +1,20 @@
+{
+  "short_name": "Ashram",
+  "name": "Achyuta Ananta Ashram Portal",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#e67e22",
+  "background_color": "#0a0a0a"
+}

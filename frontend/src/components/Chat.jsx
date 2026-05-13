@@ -375,6 +375,62 @@ export default function Chat() {
     return () => socketRef.current.disconnect(); 
   }, [user]);
 
+  useEffect(() => {
+  if (user) {
+    subscribeUserToPush();
+  }
+}, [])
+
+  const subscribeUserToPush = async () => {
+    try {
+      const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+      
+      // Safety Guard: Don't proceed if the key isn't loaded
+      if (!vapidKey) {
+        console.warn('🔔 Push notifications disabled: VITE_VAPID_PUBLIC_KEY is missing.');
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.ready;
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey) // Use the local variable
+      });
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/subscribe`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}` 
+        },
+        body: JSON.stringify(subscription)
+      });
+
+      if (res.ok) {
+        console.log('🔔 Push Subscription Successful');
+      } else {
+        console.error('❌ Server failed to save subscription');
+}
+    } catch (err) {
+      console.error('Failed to subscribe user', err);
+    }
+  };
+
+  // Helper function to convert the VAPID key
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
   const startCall = async (type) => {
     setCallType(type);
     setCalling(true);
