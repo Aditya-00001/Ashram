@@ -7,7 +7,7 @@ import ChatMessage from '../models/ChatMessage.js';
 export const sendMessage = async (req, res) => {
   try {
     // 1. Extract 'attachment' from the incoming request body!
-    const { receiverId, conversationId, text, iv, attachment, messageType, pollData } = req.body;    const senderId = req.user._id;
+    const { receiverId, conversationId, text, iv, attachment, messageType, pollData, envelopes } = req.body;    const senderId = req.user._id;
 
     let conversation;
 
@@ -35,6 +35,7 @@ export const sendMessage = async (req, res) => {
       text: text,
       iv: iv || [],
       attachment: attachment,
+      envelopes: envelopes && Object.keys(envelopes).length > 0 ? envelopes : null,
       // Pass the poll data!
       messageType: messageType || 'text',
       pollData: pollData || null

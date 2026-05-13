@@ -44,7 +44,15 @@ const chatMessageSchema = new mongoose.Schema({
   isRead: {
     type: Boolean,
     default: false
-  }
+  },
+  envelopes: {
+  type: Map,
+  of: new mongoose.Schema({
+    encryptedKey: [Number],
+    iv: [Number]
+  }, { _id: false }),
+  default: null
+},
 }, { timestamps: true });
 
 export default mongoose.model('ChatMessage', chatMessageSchema);

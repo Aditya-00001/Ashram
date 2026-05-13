@@ -101,3 +101,48 @@ export const decryptMessage = async (ciphertextArray, ivArray, sharedKey) => {
     return "[Encrypted Message - Unreadable]";
   }
 };
+
+
+// 1. Generate a random AES key for a single group message
+export const generateGroupMessageKey = async () => {
+  return await window.crypto.subtle.generateKey(
+    { name: "AES-GCM", length: 256 },
+    true, // Must be extractable so we can encrypt it for others
+    ["encrypt", "decrypt"]
+  );
+};
+
+// 2. Encrypt the Message Key using a Recipient's Public Key (RSA-OAEP or ECDH derive)
+// Note: Since we use ECDH, we still derive a temporary shared secret to lock the envelope.
+export const encryptKeyForRecipient = async (messageKey, myPrivateKey, theirPublicKey) => {
+  const sharedSecret = await deriveSharedSecret(myPrivateKey, theirPublicKey);
+  
+  // Export the raw message key bytes
+  const rawKey = await window.crypto.subtle.exportKey("raw", messageKey);
+  
+  // Encrypt the raw key bytes using the shared secret
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const encryptedKeyBuffer = await window.crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: iv },
+    sharedSecret,
+    rawKey
+  );
+
+  return {
+    encryptedKey: Array.from(new Uint8Array(encryptedKeyBuffer)),
+    iv: Array.from(iv)
+  };
+};
+
+export const decryptKeyBuffer = async (ciphertextArray, ivArray, sharedKey) => {
+  const ciphertext = new Uint8Array(ciphertextArray);
+  const iv = new Uint8Array(ivArray);
+
+  const decryptedBuffer = await window.crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: iv },
+    sharedKey,
+    ciphertext
+  );
+  
+  return decryptedBuffer; // Return the raw ArrayBuffer
+};
