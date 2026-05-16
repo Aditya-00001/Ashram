@@ -1,163 +1,315 @@
-/* UserDashboard.css */
+/* =======================================================
+   🕉️ DESIGN SYSTEM UPDATED: UserDashboard.css
+   ======================================================= */
 
 .user-dashboard-page {
-  padding: 80px 20px;
+  /* ✅ FIX: Smooth canvas layout theme integration */
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  padding: 90px 24px; /* Enhanced modern whitespace padding breathing room */
   min-height: 100vh;
-  background-color: #1a1a1a;
-  color: #eaeaea;
+  transition: var(--transition-smooth);
 }
 
 .dashboard-header {
   text-align: center;
-  margin-bottom: 50px;
+  margin-bottom: 60px; /* Increased separation boundary height */
 }
 
 .dashboard-header h2 {
-  font-size: 2.5rem;
-  color: #e67e22;
-  margin-bottom: 10px;
+  font-family: var(--font-headings);
+  font-size: 2.8rem;
+  color: var(--color-saffron);
+  margin-bottom: 12px;
 }
 
+/* --- SAAS GRID & LAYOUT MODERNIZATION --- */
 .dashboard-content {
   display: grid;
-  grid-template-columns: 1fr 2fr; /* Profile takes 1 part, History takes 2 parts */
-  gap: 30px;
-  max-width: 1100px;
+  grid-template-columns: 1fr 2fr; /* Profile panel takes 1 part, Interactive grids take 2 parts */
+  gap: 35px; /* Enhanced modern spacing footprint gap */
+  max-width: 1200px; /* Aligned with standard page constraints */
   margin: 0 auto;
   align-items: start;
 }
 
+/* --- UNIFIED STANDARDIZED WIDGET CARDS --- */
 .dashboard-card {
-  background-color: #242424;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  /* ✅ FIX: Elements turn clean surface white in light / crisp soft gray in dark */
+  background-color: var(--bg-surface);
+  padding: 35px;
+  border-radius: var(--radius-card); /* Bound to centralized design system tokens */
+  box-shadow: var(--shadow-subtle);
+  border: 1px solid var(--border-color);
   min-width: 0; 
   width: 100%;
   box-sizing: border-box;
+  transition: var(--transition-smooth);
+}
+
+.dashboard-card:hover {
+  box-shadow: var(--shadow-card);
+  border-color: var(--color-saffron);
 }
 
 .dashboard-card h3 {
-  color: #e67e22;
+  font-family: var(--font-headings);
+  color: var(--color-saffron);
   margin-top: 0;
-  margin-bottom: 20px;
-  font-size: 1.5rem;
-  border-bottom: 1px solid #444;
+  margin-bottom: 24px;
+  font-size: 1.6rem;
+  border-bottom: 1px solid var(--border-color); /* Linked to adaptive separator line */
   padding-bottom: 15px;
+  transition: var(--transition-smooth);
 }
 
-/* --- PROFILE CARD --- */
-.profile-info p {
-  font-size: 1.1rem;
-  margin: 15px 0;
-  color: #cccccc;
+/* --- NEW: TOP STATS HIGHLIGHT CARDS CONTAINER (SaaS Grade Upgrade) --- */
+.dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
 
+.stat-widget {
+  background-color: var(--bg-sidebar);
+  padding: 20px;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--border-color);
+  text-align: left;
+  transition: var(--transition-smooth);
+}
+
+.stat-widget:hover {
+  border-color: var(--color-saffron);
+  transform: translateY(-2px);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* --- PROFILE CONTAINER VIEW --- */
+.profile-info p {
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  margin: 18px 0;
+  color: var(--text-muted); /* High comfort adaptive reading color */
   overflow-wrap: anywhere; 
-  word-break: break-all; /* This aggressively chops the email if it touches the edge */
+  word-break: break-word;
   white-space: pre-wrap;
 }
 
 .profile-info strong {
-  color: #ffffff;
+  color: var(--text-main);
 }
 
 .logout-button {
   width: 100%;
-  padding: 12px;
-  margin-top: 20px;
+  padding: 14px;
+  margin-top: 24px;
   background-color: transparent;
-  border: 2px solid #ff4757;
-  color: #ff4757;
-  border-radius: 6px;
+  /* Retains clear functional crimson error border rules for high system safety awareness */
+  border: 2px solid var(--color-error);
+  color: var(--color-error);
+  border-radius: var(--radius-button);
+  font-family: var(--font-body);
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: var(--transition-smooth);
 }
 
 .logout-button:hover {
-  background-color: #ff4757;
-  color: white;
+  background-color: var(--color-error);
+  color: #ffffff; /* Explicit contrast text fallback */
+  box-shadow: var(--shadow-subtle);
+  transform: translateY(-1px);
 }
 
-/* --- HISTORY CARD --- */
+/* --- DATA TABLE & CHRONOLOGICAL HISTORY PANELS --- */
 .empty-state {
   text-align: center;
-  padding: 30px 0;
+  padding: 40px 20px;
 }
 
 .empty-state p {
-  color: #bbbbbb;
-  margin-bottom: 20px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
   font-size: 1.1rem;
 }
 
 .table-responsive {
-  overflow-x: auto; /* Fixes mobile table squishing */
+  overflow-x: auto; /* Fixes mobile viewport table squishing bugs */
+  border-radius: var(--radius-button);
+  border: 1px solid var(--border-color);
 }
 
 .history-table {
   width: 100%;
   border-collapse: collapse;
   white-space: nowrap;
+  background-color: var(--bg-surface);
 }
 
 .history-table th, .history-table td {
-  padding: 15px;
+  padding: 16px 20px;
   text-align: left;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color); /* Adaptive clean track lines */
+  font-size: 0.98rem;
+  transition: var(--transition-smooth);
+}
+
+.history-table tr:last-child td {
+  border-bottom: none;
+}
+
+.history-table tr:hover td {
+  background-color: var(--bg-primary); /* Modern table row tracking hover highlighting effect */
 }
 
 .history-table th {
-  color: #888888;
-  font-weight: 600;
+  background-color: var(--bg-sidebar); /* Structured column headers split background */
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
 }
 
+/* --- REFINED PILL STATUS BADGES --- */
 .status-badge {
-  padding: 5px 10px;
+  padding: 6px 14px;
   border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: bold;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-block;
 }
 
 .status-badge.successful {
-  background-color: rgba(46, 204, 113, 0.2);
+  background-color: rgba(46, 204, 113, 0.15); /* Soft, comfortable translucent alpha values */
   color: #2ecc71;
 }
 
 .status-badge.pending {
-  background-color: rgba(241, 196, 15, 0.2);
+  background-color: rgba(241, 196, 15, 0.15);
   color: #f1c40f;
 }
 
 .status-badge.failed {
-  background-color: rgba(231, 76, 60, 0.2);
+  background-color: rgba(231, 76, 60, 0.15);
   color: #e74c3c;
 }
 
-/* --- MOBILE RESPONSIVENESS --- */
-/* --- MOBILE RESPONSIVENESS --- */
+/* --- NEW: INTERACTIVE TIMELINE ACTIONS (SaaS Grade Upgrade) --- */
+.activity-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px 0;
+  text-align: left;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 15px;
+  position: relative;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  top: 24px;
+  left: 7px;
+  bottom: -24px;
+  width: 2px;
+  background-color: var(--border-color);
+}
+
+.timeline-item:last-child::before {
+  display: none;
+}
+
+.timeline-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: var(--color-saffron);
+  border: 3px solid var(--bg-surface);
+  box-shadow: 0 0 0 2px var(--color-saffron);
+  z-index: 2;
+  margin-top: 4px;
+}
+
+.timeline-icon.completed {
+  background-color: #2ecc71;
+  box-shadow: 0 0 0 2px #2ecc71;
+}
+
+.timeline-content {
+  flex: 1;
+}
+
+.timeline-time {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.timeline-title {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* =======================================================
+   📱 MOBILE INTERFACE RESPONSIVENESS (< 768px)
+   ======================================================= */
 @media (max-width: 768px) {
+  .user-dashboard-page {
+    padding: 60px 16px;
+  }
+
   .dashboard-content {
-    grid-template-columns: 1fr; /* Stacks the cards on mobile */
+    grid-template-columns: 1fr; /* Stacks the dashboard sidebar cards dynamically on phones */
+    gap: 24px;
   }
   
   .dashboard-card {
-    padding: 20px; /* Reduces the thick 30px padding to give text more room */
-    max-width: 100%; /* Ensures the card never grows wider than the screen */
-    box-sizing: border-box;
-    
+    padding: 24px 20px; /* Balanced layout breathing bounds for tight viewports */
+    max-width: 100%; 
   }
 
   .dashboard-header h2 {
-    font-size: 2rem; /* Scales the big header down slightly */
+    font-size: 2.2rem; 
   }
   
   .profile-info p {
-    font-size: 1rem; /* Scales profile text down slightly for narrow screens */
+    font-size: 1rem; 
     overflow-wrap: break-word; 
     word-break: break-word;
     white-space: normal;
+  }
+
+  .dashboard-stats-grid {
+    grid-template-columns: 1fr; /* Stack dashboard metric card lists on tight grids */
+    gap: 16px;
+  }
+  
+  .history-table th, .history-table td {
+    padding: 12px 14px; /* Condensed inner footprint metrics for mobile screen rows */
   }
 }

@@ -1,23 +1,28 @@
-/* Books.css */
+/* =======================================================
+   🕉️ DESIGN SYSTEM UPDATED: Books.css
+   ======================================================= */
 
 .books-page {
-  padding: 80px 20px;
+  /* ✅ FIX: Dynamic canvas backgrounds and text color bindings */
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  padding: 90px 24px; /* Enhanced modern whitespace breathing room */
   min-height: 100vh;
-  background-color: #1a1a1a;
-  color: #eaeaea;
+  transition: var(--transition-smooth);
 }
 
 .books-intro {
   text-align: center;
-  margin-bottom: 50px;
-  color: #cccccc;
-  font-size: 1.1rem;
-  max-width: 600px;
+  margin-bottom: 60px; /* Increased separation height layout gap */
+  color: var(--text-muted); /* Soft descriptive reading text */
+  font-size: 1.15rem;
+  max-width: 650px;
   margin-left: auto;
   margin-right: auto;
+  line-height: 1.65;
 }
 
-/* Flexbox keeps the 2 books centered without stretching them */
+/* Flexbox framework container layout handles card centering cleanly */
 .books-grid {
   display: flex;
   flex-wrap: wrap;
@@ -27,82 +32,117 @@
   margin: 0 auto;
 }
 
-/* --- BOOK CARDS --- */
+/* --- ADAPTIVE SACRED BOOK CARD ELEMENTS --- */
 .book-card {
-  background: #333333;
-  border-radius: 12px;
+  /* ✅ FIX: Cards render as surface white in light / soft slate in dark */
+  background: var(--bg-surface);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-color);
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition-smooth);
   width: 100%;
-  max-width: 400px; /* Ensures the cards don't get too wide */
+  max-width: 380px; /* Refined compact grid constraints */
   display: flex;
   flex-direction: column;
 }
 
 .book-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  transform: translateY(-6px); /* Kinetic interactive card lift */
+  box-shadow: var(--shadow-card);
+  border-color: var(--color-saffron);
 }
 
 .book-cover {
   width: 100%;
-  aspect-ratio: 3 / 4; /* Standard paperback book shape */
+  aspect-ratio: 3 / 4; 
   object-fit: cover;
-  border-bottom: 2px solid #444; /* Subtle divider below the image */
+  border-bottom: 1px solid var(--border-color); /* Linked to adaptive separator tint */
+  transition: var(--transition-smooth);
 }
 
 .book-info {
-  padding: 25px;
+  padding: 30px; /* Slightly elevated internal content grid padding */
   display: flex;
   flex-direction: column;
-  flex-grow: 1; /* Pushes the footer to the bottom */
+  flex-grow: 1; 
 }
 
 .book-info h3 {
-  margin: 0 0 5px 0;
-  color: #ffffff;
-  font-size: 1.5rem;
+  font-family: var(--font-headings);
+  margin: 0 0 6px 0;
+  color: var(--text-main);
+  font-size: 1.6rem;
 }
 
 .book-author {
-  color: #e67e22; /* Saffron accent for the author */
+  color: var(--color-saffron); /* Explicitly bound to branding orange token */
+  font-family: var(--font-body);
   font-style: italic;
-  margin-bottom: 15px;
-  font-weight: 500;
+  margin-bottom: 20px;
+  font-weight: 600;
 }
 
 .book-description {
-  color: #bbbbbb;
-  line-height: 1.6;
+  color: var(--text-muted);
+  line-height: 1.65;
   margin-bottom: 30px;
+  font-size: 0.98rem;
 }
 
-/* --- CARD FOOTER (Price & Button) --- */
+/* --- STANDARDIZED DISPLAY FOOTER (Price & Trigger Action) --- */
 .book-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: auto; /* Always sits at the bottom of the card */
+  margin-top: auto; 
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color); /* Added clean visual separation for SaaS look */
 }
 
 .book-price {
-  font-weight: 600;
-  color: #eaeaea;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--text-main);
 }
 
 .read-btn {
-  background-color: #e67e22;
-  color: #fff;
+  background-color: var(--color-saffron);
+  color: #ffffff; /* Contrast text remains white across styles */
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
+  padding: 12px 24px; /* Broadened tap metrics for native UX layout performance */
+  border-radius: var(--radius-button);
   cursor: pointer;
   font-weight: 600;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition-smooth);
 }
 
 .read-btn:hover {
-  background-color: #d35400;
+  background-color: var(--color-saffron-hover);
   transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+/* =======================================================
+   📱 RESPONSIVE INTERFACE BREAKPOINTS
+   ======================================================= */
+@media (max-width: 768px) {
+  .books-page {
+    padding: 60px 16px;
+  }
+
+  .books-intro {
+    margin-bottom: 40px;
+    font-size: 1.05rem;
+  }
+
+  .books-grid {
+    gap: 30px;
+  }
+
+  .book-card {
+    max-width: 100%; /* Spans viewport width boundaries smoothly on mobile displays */
+  }
 }

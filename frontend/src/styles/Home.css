@@ -1,24 +1,26 @@
-/* Home.css */
+/* =======================================================
+   🕉️ DESIGN SYSTEM UPDATED: Home.css
+   ======================================================= */
 
 .home-page {
   /* Ensures no weird gaps if the page is shorter than the screen */
   min-height: 100vh; 
-  background-color: #1a1a1a;
-  color: #eaeaea;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  transition: var(--transition-smooth);
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 24px; /* Enhanced modern horizontal container gutter spacing */
   text-align: center;
 }
 
-/* --- HERO SECTION --- */
+/* --- HERO DISPLAY SECTION --- */
 .hero-section {
   position: relative;
-  height: 80vh; /* Takes up 80% of the screen height */
-  /* Placeholder spiritual background image */
+  height: 80vh; 
   background-image: url('https://images.unsplash.com/photo-1593811167562-9cef47bfc4d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
   background-size: cover;
   background-position: center;
@@ -27,77 +29,87 @@
   justify-content: center;
 }
 
-/* Darkens the background image so white text is readable */
-/* Darkens the background image so white text is readable */
 .hero-overlay {
-  background-color: rgba(0, 0, 0, 0.6);
-  padding: 40px;
-  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.65); /* Increased contrast protection slightly */
+  padding: 50px 40px; /* Elevated modern grid vertical padding */
+  border-radius: var(--radius-card);
   text-align: center;
   max-width: 800px;
-  width: 90%; /* Keeps the box from touching the screen edges on mobile */
+  width: 90%; 
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .hero-overlay h1 {
-  font-size: 3.5rem;
-  margin-bottom: 10px;
-  color: #ffffff;
-  line-height: 1.2; /* Prevents lines of text from crashing into each other */
+  font-family: var(--font-headings);
+  font-size: 3.8rem; /* Enhanced hierarchy definition scale */
+  margin-bottom: 15px;
+  color: #ffffff; /* Preserved crisp white for high overlay contrast readability */
+  line-height: 1.25; 
 }
 
 .tagline {
   font-size: 1.5rem;
-  margin-bottom: 30px;
+  margin-bottom: 35px;
   font-style: italic;
-  color: #cccccc;
+  color: #dddddd;
 }
 
-/* --- MOBILE RESPONSIVENESS FOR THE HERO SECTION --- */
+/* --- HERO PHONE BREAKPOINT OPTIMIZATION --- */
 @media (max-width: 768px) {
   .hero-overlay {
-    padding: 30px 20px; /* Reduces padding to give text more breathing room */
+    padding: 40px 20px; 
   }
 
   .hero-overlay h1 {
-    font-size: 2rem; /* Shrinks the massive title for phone screens */
+    font-size: 2.2rem; 
   }
 
   .tagline {
-    font-size: 1.1rem; /* Shrinks the subtitle */
-    margin-bottom: 20px;
+    font-size: 1.2rem; 
+    margin-bottom: 25px;
   }
 }
 
+/* --- STANDARDIZED CALL-TO-ACTION BRAND TRIGGER --- */
 .cta-button {
-  background-color: #e67e22;
-  color: #fff;
+  background-color: var(--color-saffron);
+  color: #ffffff;
   border: none;
-  padding: 15px 30px;
+  padding: 16px 36px; /* Slightly broader tap targets for modern UI */
   font-size: 1.1rem;
-  border-radius: 6px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s, transform 0.2s;
+  border-radius: var(--radius-button);
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition-smooth);
 }
 
 .cta-button:hover {
-  background-color: #d35400;
+  background-color: var(--color-saffron-hover);
   transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
 }
 
-/* --- GENERAL SECTION STYLING --- */
+/* --- STRUCTURAL WHITE SPACE HIERARCHY --- */
 section {
-  padding: 80px 0;
+  padding: 90px 0; /* Enhanced layout breathing room space */
 }
 
 h2 {
-  font-size: 2.2rem;
-  color: #e67e22;
-  margin-bottom: 30px;
+  font-family: var(--font-headings);
+  font-size: 2.5rem;
+  color: var(--color-saffron);
+  margin-bottom: 35px;
 }
 
-/* --- INTRO SECTION --- */
-.intro-section {
-  background-color: #242424;
+/* --- INTRO & COMMUNITY BAND OVERRIDE --- */
+/* ✅ FIXED: Added missing comma selector syntax to prevent compounding errors */
+.intro-section, .testimonials-section {
+  background-color: var(--bg-sidebar);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  transition: var(--transition-smooth);
 }
 
 .description-placeholder {
@@ -105,117 +117,115 @@ h2 {
   line-height: 1.8;
   max-width: 800px;
   margin: 0 auto;
-  color: #cccccc;
+  color: var(--text-muted);
 }
 
-/* --- PRACTICES GRID --- */
+/* --- PRACTICES MODULAR GRID --- */
 .practices-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 30px;
-  margin-top: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Broader minimal footprint layout width */
+  gap: 35px;
+  margin-top: 50px;
 }
 
 .practice-card {
-  background-color: #333333;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  transition: transform 0.3s;
+  background-color: var(--bg-surface); 
+  padding: 35px;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-subtle);
+  border: 1px solid var(--border-color);
+  transition: var(--transition-smooth);
 }
 
 .practice-card:hover {
   transform: translateY(-5px);
+  box-shadow: var(--shadow-card);
+  border-color: var(--color-saffron);
 }
 
 .practice-card h3 {
-  font-size: 1.4rem;
-  color: #ffffff;
+  font-family: var(--font-headings);
+  font-size: 1.5rem;
+  color: var(--text-main);
   margin-bottom: 15px;
 }
 
 .practice-card p {
   line-height: 1.6;
-  color: #bbbbbb;
+  color: var(--text-muted);
+  margin: 0;
 }
 
-/* --- MAP SECTION --- */
+/* --- INTEGRATED MAP LAYOUT --- */
 .location-section p {
-  margin-bottom: 30px;
+  margin-bottom: 35px;
   font-size: 1.1rem;
+  color: var(--text-muted);
 }
 
 .map-container {
   width: 100%;
   max-width: 1000px;
   margin: 0 auto;
-  height: 400px;
-  background-color: #333;
-  border-radius: 12px;
+  height: 420px;
+  background-color: var(--bg-sidebar);
+  border-radius: var(--radius-card);
   overflow: hidden;
-  /* Removed the flexbox centering rules so the iframe can just fill the space */
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition-smooth);
 }
 
-/* .map-placeholder {
-  color: #888;
-  font-size: 1.2rem;
-} */
-
-
-/* --- TESTIMONIALS / COMMUNITY VOICES --- */
-.testimonials-section {
-  background-color: #242424; 
-}
-
+/* --- COMMUNITY CAROUSEL PACKS --- */
 .section-subtitle {
-  color: #cccccc;
+  color: var(--text-muted);
   margin-bottom: 50px;
   font-size: 1.1rem;
 }
 
-/* Swiper specific spacing */
 .testimonial-swiper {
   width: 100%;
-  padding-bottom: 60px !important; /* Forces room for the pagination dots */
+  padding-bottom: 60px !important; 
 }
 
-/* Colors the Swiper pagination dots to match your Saffron theme */
 .testimonial-swiper .swiper-pagination-bullet {
-  background-color: #888888;
-  opacity: 0.5;
+  background-color: var(--text-muted);
+  opacity: 0.3;
 }
 
 .testimonial-swiper .swiper-pagination-bullet-active {
-  background-color: #e67e22;
+  background-color: var(--color-saffron);
   opacity: 1;
 }
 
-/* The card styling remains mostly the same, but we make sure they stretch to equal heights if text length varies */
 .testimonial-card {
-  background-color: #333333;
-  padding: 40px 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background-color: var(--bg-surface);
+  padding: 45px 35px 35px 35px;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-subtle);
+  border: 1px solid var(--border-color);
   position: relative;
   text-align: left;
-  transition: transform 0.3s ease;
-  height: 100%; /* Ensures all cards in the row are the same height */
+  height: 100%; 
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  transition: var(--transition-smooth);
 }
 
 .testimonial-card:hover {
   transform: translateY(-5px);
+  box-shadow: var(--shadow-card);
+  border-color: var(--color-saffron);
 }
 
 .testimonial-card::before {
   content: '❝';
   font-size: 5rem;
-  color: rgba(230, 126, 34, 0.15); 
+  color: var(--color-saffron);
+  opacity: 0.12; 
   position: absolute;
-  top: 10px;
+  top: 5px;
   left: 20px;
   line-height: 1;
   font-family: serif;
@@ -224,16 +234,18 @@ h2 {
 .quote {
   font-size: 1.1rem;
   font-style: italic;
-  color: #eaeaea;
-  line-height: 1.6;
-  margin-bottom: 25px;
+  color: var(--text-muted);
+  line-height: 1.65;
+  margin-bottom: 30px;
   position: relative; 
   z-index: 1;
 }
 
 .author {
-  color: #e67e22;
+  color: var(--color-saffron);
+  font-family: var(--font-body);
   font-weight: 600;
   text-align: right;
   font-size: 1.05rem;
+  margin: 0;
 }

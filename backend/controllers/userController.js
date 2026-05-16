@@ -198,3 +198,40 @@ export const updatePublicKey = async (req, res) => {
     res.status(500).json({ message: 'Server error saving public key', error: error.message });
   }
 };
+
+// @desc    Save encrypted E2EE private key escrow
+// @route   PUT /api/users/escrow
+// @access  Private
+export const saveUserEscrow = async (req, res) => {
+  try {
+    const { escrowedPrivateKey, escrowSalt, escrowIv, publicKey } = req.body;
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Update both the public key and the encrypted escrow container
+    if (publicKey) user.publicKey = publicKey;
+    user.escrowedPrivateKey = escrowedPrivateKey;
+    user.escrowSalt = escrowSalt;
+    user.escrowIv = escrowIv;
+
+    await user.save();
+    res.status(200).json({ message: 'Secure Chat Vault initialized successfully.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error initializing vault', error: error.message });
+  }
+};
+
+// @desc    Get encrypted E2EE private key escrow parameters
+// @route   GET /api/users/escrow
+// @access  Private
+export const getUserEscrow = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('escrowedPrivateKey escrowSalt escrowIv publicKey');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error retrieving vault parameters' });
+  }
+};

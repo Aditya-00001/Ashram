@@ -20,6 +20,11 @@ const userSchema = new mongoose.Schema({
   // --- NEW: E2EE PUBLIC KEY ---
   publicKey: { type: Object, default: null },
 
+  // --- NEW: PHASE 7 ZERO-KNOWLEDGE PRIVATE KEY ESCROW ---
+  escrowedPrivateKey: { type: [Number], default: null },
+  escrowSalt: { type: [Number], default: null },
+  escrowIv: { type: [Number], default: null },
+
   // --- NEW: PWA PUSH SUBSCRIPTION ---
   // We store this as an Object because it contains the endpoint, expirationTime, and keys (p256dh, auth)
   pushSubscription: { type: Object, default: null }

@@ -116,15 +116,15 @@ export default function Support() {
   };
 
   return (
-    <div className="support-page" style={{ padding: '80px 20px', minHeight: '80vh', textAlign: 'center', backgroundColor: '#121212', color: '#fff' }}>
+    <div className="support-page" style={{ padding: '80px 20px', minHeight: '80vh', textAlign: 'center', backgroundColor: 'var(--bg-primary)', color: 'var(--text-main)' }}>
       <h2>Support the Ashram</h2>
-      <p style={{ color: '#ccc', marginBottom: '40px' }}>Your contributions sustain our daily operations and spiritual programs.</p>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '40px' }}>Your contributions sustain our daily operations and spiritual programs.</p>
 
-      <form onSubmit={displayRazorpay} style={{ maxWidth: '400px', margin: '0 auto', backgroundColor: '#1e1e1e', padding: '30px', borderRadius: '8px' }}>
+      <form onSubmit={displayRazorpay} style={{ maxWidth: '400px', margin: '0 auto', backgroundColor: 'var(--bg-sidebar)', padding: '30px', borderRadius: '8px' }}>
         
         <div style={{ marginBottom: '20px', textAlign: 'left' }}>
-          <label style={{ display: 'block', color: '#e67e22', marginBottom: '8px' }}>Seva Purpose</label>
-          <select value={purpose} onChange={(e) => setPurpose(e.target.value)} required style={{ width: '100%', padding: '10px', backgroundColor: '#242424', color: '#fff', border: '1px solid #444', borderRadius: '4px' }}>
+          <label style={{ display: 'block', color: 'var(--color-saffron)', marginBottom: '8px' }}>Seva Purpose</label>
+          <select value={purpose} onChange={(e) => setPurpose(e.target.value)} required style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '4px' }}>
             <option value="General Seva">General Seva</option>
             <option value="Anna Daan (Food)">Anna Daan (Food)</option>
             <option value="Gau Seva (Cows)">Gau Seva (Cows)</option>
@@ -133,14 +133,14 @@ export default function Support() {
         </div>
 
         <div style={{ marginBottom: '30px', textAlign: 'left' }}>
-          <label style={{ display: 'block', color: '#e67e22', marginBottom: '8px' }}>Amount (₹)</label>
+          <label style={{ display: 'block', color: 'var(--color-saffron)', marginBottom: '8px' }}>Amount (₹)</label>
           <input 
             type="number" 
             min="100" 
             value={amount} 
             onChange={(e) => setAmount(e.target.value)} 
             required 
-            style={{ width: '100%', padding: '10px', backgroundColor: '#242424', color: '#fff', border: '1px solid #444', borderRadius: '4px' }}
+            style={{ width: '100%', padding: '10px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '4px' }}
           />
         </div>
 

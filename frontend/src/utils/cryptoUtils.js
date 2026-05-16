@@ -146,3 +146,88 @@ export const decryptKeyBuffer = async (ciphertextArray, ivArray, sharedKey) => {
   
   return decryptedBuffer; // Return the raw ArrayBuffer
 };
+
+// =======================================================
+// 🔐 CLIENT-SIDE VAULT WRAPPING (PBKDF2 + AES-GCM)
+// =======================================================
+
+export const wrapPrivateKey = async (privateKeyJWK, pinOrPassphrase) => {
+  const encoder = new TextEncoder();
+  const pinBuffer = encoder.encode(pinOrPassphrase);
+  
+  const baseKey = await window.crypto.subtle.importKey(
+    "raw",
+    pinBuffer,
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+  
+  const salt = window.crypto.getRandomValues(new Uint8Array(16));
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  
+  const wrappingKey = await window.crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 100000, // High iteration count for cryptographic resilience
+      hash: "SHA-256"
+    },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt"]
+  );
+  
+  const jwkString = JSON.stringify(privateKeyJWK);
+  const encryptedBuffer = await window.crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: iv },
+    wrappingKey,
+    encoder.encode(jwkString)
+  );
+  
+  return {
+    escrowedPrivateKey: Array.from(new Uint8Array(encryptedBuffer)),
+    escrowSalt: Array.from(salt),
+    escrowIv: Array.from(iv)
+  };
+};
+
+export const unwrapPrivateKey = async (encryptedKeyBlob, saltArray, ivArray, pinOrPassphrase) => {
+  const encoder = new TextEncoder();
+  const pinBuffer = encoder.encode(pinOrPassphrase);
+  
+  const baseKey = await window.crypto.subtle.importKey(
+    "raw",
+    pinBuffer,
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+  
+  const salt = new Uint8Array(saltArray);
+  const iv = new Uint8Array(ivArray);
+  
+  const wrappingKey = await window.crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: salt,
+      iterations: 100000,
+      hash: "SHA-256"
+    },
+    baseKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"]
+  );
+  
+  const ciphertext = new Uint8Array(encryptedKeyBlob);
+  const decryptedBuffer = await window.crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: iv },
+    wrappingKey,
+    ciphertext
+  );
+  
+  const decoder = new TextDecoder();
+  return JSON.parse(decoder.decode(decryptedBuffer));
+};

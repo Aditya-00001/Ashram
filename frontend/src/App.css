@@ -8,12 +8,15 @@ html, body {
   width: 100%;
   margin: 0;
   padding: 0;
-  background-color: #1a1a1a; /* Keeps your dark theme consistent */
+  /* ✅ FIX: Bind background and text to global tokens */
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  transition: var(--transition-smooth);
 }
 
 /* This targets the main React container and forces it to stack vertically */
 #root {
-  display: block; /* THIS KILLS VITE's HORIZONTAL FLEXBOX BUG */
+  display: block; 
   width: 100%;
   max-width: 100%;
   margin: 0;
@@ -27,42 +30,46 @@ html, body {
   justify-content: space-between; 
   align-items: center;
   height: 60px;
-  background-color: #333;
-  color: white;
+  background-color: var(--bg-sidebar);
+  color: var(--text-main);
   padding: 0 2rem;
-  position: relative; /* Crucial for the dropdown to attach properly */
+  position: relative; 
   z-index: 1000;
+  border-bottom: 1px solid var(--border-color);
+  transition: var(--transition-smooth);
 }
 
 .nav-logo h2 {
   margin: 0;
-  color: white; 
+  /* ✅ FIX: Dynamically adapt text branding */
+  color: var(--text-main); 
 }
 
 .desktop-primary-links {
   display: flex;
   gap: 30px;
   align-items: center;
-  margin-left: auto; /* Pushes the links to the right */
-  margin-right: 40px; /* Leaves space for the hamburger */
+  margin-left: auto; 
+  margin-right: 40px; 
 }
 
 .nav-item {
-  color: white;
+  /* ✅ FIX: Dynamically adapt header reading text */
+  color: var(--text-muted);
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.3s;
+  transition: var(--transition-smooth);
 }
 
-.nav-item:hover {
-  color: #e67e22; /* Ashram orange hover effect */
+.nav-item:hover, .nav-item.active {
+  color: var(--color-saffron); /* Ashram orange hover effect */
 }
 
 .hidden-link {
   display: none !important;
 }
 
-/* --- THE HAMBURGER ICON (Now visible everywhere!) --- */
+/* --- THE HAMBURGER ICON --- */
 .hamburger {
   display: flex; 
   flex-direction: column;
@@ -74,35 +81,35 @@ html, body {
 .hamburger .bar {
   width: 25px;
   height: 3px;
-  background-color: white;
+  /* ✅ FIX: Adapt hamburger bars to match readable theme text context */
+  background-color: var(--text-main);
   border-radius: 3px;
-  transition: all 0.3s ease;
+  transition: var(--transition-smooth);
 }
 
 /* --- THE DESKTOP DROPDOWN MENU --- */
 .nav-links {
   position: absolute;
-  top: 60px; /* Drops directly below the navbar */
+  top: 60px; 
   right: 0;
-  width: 250px; /* Clean, compact width for laptops */
-  background-color: #333333;
+  width: 250px; 
+  /* ✅ FIX: Adapt drop container background and boundary styles */
+  background-color: var(--bg-surface);
   display: flex;
   flex-direction: column; 
   align-items: center;
   padding: 0;
   
-  /* Slide/Fade animation */
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.4s ease, opacity 0.4s ease;
+  transition: max-height 0.4s ease, opacity 0.4s ease, background-color 0.3s ease;
   z-index: 99; 
   
-  /* Stylish bottom-left border for the dropdown corner */
-  border-bottom-left-radius: 8px;
-  box-shadow: -4px 4px 15px rgba(0,0,0,0.3);
-  border-bottom: 2px solid #e67e22; 
-  border-left: 2px solid #e67e22;
+  border-bottom-left-radius: var(--radius-button);
+  box-shadow: var(--shadow-card);
+  border-bottom: 2px solid var(--color-saffron); 
+  border-left: 2px solid var(--color-saffron);
 }
 
 .nav-links.open {
@@ -124,26 +131,22 @@ html, body {
 
 /* --- MOBILE RESPONSIVENESS (< 768px) --- */
 @media screen and (max-width: 768px) {
-  
-  /* Hide the primary laptop links */
   .desktop-primary-links {
     display: none; 
   }
 
-  /* Reveal the duplicates inside the mobile hamburger menu */
   .mobile-only-link {
     display: block !important; 
   }
 
-  /* Make the dropdown span the entire width of the screen */
   .nav-links {
     width: 100%; 
-    border-left: none; /* Remove desktop styling */
+    border-left: none; 
     border-bottom-left-radius: 0;
   }
   
   .nav-links.open {
-    max-height: calc(100vh - 60px); /* Allow scrolling if menu is huge */
+    max-height: calc(100vh - 60px); 
     overflow-y: auto;               
     padding-bottom: 30px;           
   }

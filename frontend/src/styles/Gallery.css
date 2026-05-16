@@ -1,57 +1,83 @@
-/* Gallery.css Additions */
+/* =======================================================
+   🕉️ DESIGN SYSTEM UPDATED: Gallery.css
+   ======================================================= */
 
+/* --- INTERACTIVE CATEGORY FILTER CHIPS --- */
 .gallery-filters .filter-btn {
   background: transparent;
-  border: 2px solid #e67e22;
-  color: #e67e22;
-  padding: 8px 20px;
-  border-radius: 30px;
+  /* ✅ FIX: Adapt borders dynamically to brand saffron custom property */
+  border: 2px solid var(--color-saffron);
+  color: var(--color-saffron);
+  padding: 8px 22px;
+  border-radius: 30px; /* Kept pill layout shape for standard interaction tags */
   cursor: pointer;
+  font-family: var(--font-body);
   font-weight: bold;
-  transition: all 0.3s ease;
+  transition: var(--transition-smooth);
 }
 
 .gallery-filters .filter-btn:hover,
 .gallery-filters .filter-btn.active {
-  background: #e67e22;
-  color: #1a1a1a;
+  background: var(--color-saffron);
+  /* ✅ FIX: Flips cleanly to light canvas or dark canvas base text values */
+  color: #ffffff; 
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-subtle);
 }
 
+/* --- RESPONSIVE MEDIA GRID SCALES --- */
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  gap: 24px; /* Enhanced modern gutter grid separation spacing */
+  padding: 20px 0;
 }
 
+/* --- CARD DISPLAY SURFACES --- */
 .gallery-card {
   position: relative;
-  border-radius: 12px;
+  border-radius: var(--radius-card); /* Linked to standardized design token */
+  border: 1px solid var(--border-color);
   overflow: hidden;
   cursor: pointer;
   aspect-ratio: 4/3;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  box-shadow: var(--shadow-subtle);
+  background-color: var(--bg-surface);
+  transition: var(--transition-smooth);
+}
+
+.gallery-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card);
+  border-color: var(--color-saffron);
 }
 
 .gallery-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.4s ease;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .gallery-card:hover img {
-  transform: scale(1.05);
+  transform: scale(1.05); /* Soft cinematic zooming feedback */
 }
 
+/* --- HOVER DESCRIPTION TEXT BANDS --- */
 .gallery-overlay {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(transparent, rgba(0,0,0,0.9));
-  padding: 20px;
+  /* Re-configured gradient shadow to seamlessly match active dark overlay specifications */
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+  padding: 24px;
   transform: translateY(100%);
-  transition: transform 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 .gallery-card:hover .gallery-overlay {
@@ -59,57 +85,104 @@
 }
 
 .gallery-tag {
-  background: #e67e22;
-  color: #fff;
+  background: var(--color-saffron);
+  color: #ffffff; /* Contrast label falls back safely across color layouts */
   font-size: 0.75rem;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-button);
+  font-family: var(--font-body);
   font-weight: bold;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .gallery-caption {
-  color: #fff;
-  margin: 10px 0 0 0;
+  color: #ffffff; /* Retains crisp canvas contrast against the darkened bottom scrim */
+  margin: 0;
   font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
-/* LIGHTBOX STYLES */
+/* =======================================================
+   🖼️ LIGHTBOX OVERLAY WINDOW (FULL-SCREEN MODE)
+   ======================================================= */
 .lightbox {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.9);
-  z-index: 9999;
+  /* Deep cinematic backdrop wash independent of layout flips */
+  background: rgba(10, 10, 10, 0.95); 
+  z-index: 9999; /* Higher layer depth rank clearance */
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 24px;
   cursor: zoom-out;
+  backdrop-filter: blur(4px); /* Premium soft blur layer spacing */
+  transition: var(--transition-smooth);
 }
 
 .lightbox img {
   max-width: 90%;
   max-height: 80vh;
-  border-radius: 8px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  border-radius: var(--radius-card);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .close-lightbox {
   position: absolute;
-  top: 20px;
+  top: 24px;
   right: 40px;
-  font-size: 40px;
-  color: white;
+  font-size: 2.5rem;
+  color: #ffffff;
+  opacity: 0.7;
   cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.close-lightbox:hover {
+  color: var(--color-error);
+  opacity: 1;
+  transform: rotate(90deg);
 }
 
 .lightbox-caption {
-  color: #fff;
+  color: #ffffff;
   margin-top: 20px;
-  font-size: 1.2rem;
+  font-family: var(--font-headings);
+  font-size: 1.3rem;
   text-align: center;
+  letter-spacing: 0.5px;
+}
+
+/* --- MOBILE SCREEN OPTIMIZATION BREAKPOINTS --- */
+@media (max-width: 768px) {
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  
+  .gallery-filters {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto; /* Handles horizontal scrolling for category chips on narrow devices */
+    padding-bottom: 10px;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .gallery-filters::-webkit-scrollbar {
+    display: none; /* Hides horizontal track lines cleanly on mobile viewports */
+  }
+
+  .close-lightbox {
+    top: 16px;
+    right: 20px;
+    font-size: 2rem;
+  }
 }

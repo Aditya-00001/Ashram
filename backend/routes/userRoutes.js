@@ -1,5 +1,14 @@
 import express from 'express';
-import { updateUserProfile, updateUserPassword, getUsers, updateUserRole, getUserDirectory, updatePublicKey } from '../controllers/userController.js';
+import {
+   updateUserProfile, 
+  updateUserPassword, 
+  getUsers, 
+  updateUserRole, 
+  getUserDirectory, 
+  updatePublicKey,
+  saveUserEscrow,
+  getUserEscrow
+ } from '../controllers/userController.js';
 import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
 
@@ -13,6 +22,10 @@ router.put('/:id/role', protect, authorizeRoles('admin', 'superadmin'), updateUs
 router.get('/directory', protect, getUserDirectory);
 // --- NEW: Route to save user's E2EE Public Key ---
 router.put('/public-key', protect, updatePublicKey);
+
+// --- NEW: Route to save encrypted E2EE private key escrow ---
+router.put('/escrow', protect, saveUserEscrow);
+router.get('/escrow', protect, getUserEscrow);
 
 // Route to save push subscription to user profile
 router.post('/subscribe', protect, async (req, res) => {

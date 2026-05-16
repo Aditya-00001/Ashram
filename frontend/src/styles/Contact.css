@@ -1,31 +1,36 @@
-/* Contact.css */
+/* =======================================================
+   🕉️ DESIGN SYSTEM UPDATED: Contact.css
+   ======================================================= */
 
 .contact-page {
-  padding: 80px 20px;
+  /* ✅ FIX: Dynamic page-level background and color theme bindings */
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  padding: 90px 24px; /* Enhanced modern horizontal and vertical spacing */
   min-height: 100vh;
-  background-color: #1a1a1a;
-  color: #eaeaea;
+  transition: var(--transition-smooth);
 }
 
 .contact-header {
   text-align: center;
   max-width: 700px;
-  margin: 0 auto 50px auto;
+  margin: 0 auto 60px auto; /* Elevated layout whitespace separation height */
 }
 
 .contact-header h2 {
-  font-size: 2.5rem;
-  color: #e67e22;
+  font-family: var(--font-headings);
+  font-size: 2.8rem;
+  color: var(--color-saffron);
   margin-bottom: 15px;
 }
 
 .contact-header p {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  color: #cccccc;
+  font-size: 1.15rem;
+  line-height: 1.65;
+  color: var(--text-muted); /* Adaptive soft reading contrast color */
 }
 
-/* --- TWO COLUMN LAYOUT --- */
+/* --- TWO COLUMN WIDGET SYSTEM LAYOUT --- */
 .contact-content {
   display: flex;
   gap: 40px;
@@ -35,25 +40,28 @@
 }
 
 .contact-form-container, .contact-info {
-  background-color: #242424;
+  /* ✅ FIX: Containers turn crisp surface white in light / soft slate in dark */
+  background-color: var(--bg-surface);
   padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-card); /* Linked to standardized design token */
+  box-shadow: var(--shadow-subtle);
+  border: 1px solid var(--border-color); /* Adaptive clean edge boundary */
+  transition: var(--transition-smooth);
 }
 
 .contact-form-container {
-  flex: 2; /* Takes up more space than the info box */
+  flex: 2; /* Form retains structural footprint dominance on wide viewports */
 }
 
 .contact-info {
   flex: 1;
 }
 
-/* --- FORM STYLING --- */
+/* --- FORM STYLING PANELS --- */
 .contact-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px; /* Refined modern form field track padding gaps */
 }
 
 .input-group {
@@ -64,8 +72,9 @@
 }
 
 .input-group label {
-  font-weight: 500;
-  color: #ffffff;
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--text-main);
   font-size: 0.95rem;
 }
 
@@ -74,73 +83,98 @@
 .input-group textarea {
   width: 100%;
   padding: 12px 15px;
-  background-color: #333333;
-  border: 1px solid #444444;
-  border-radius: 6px;
-  color: #ffffff;
+  /* ✅ FIX: Input inputs use global primary theme canvas color variables */
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-button); /* Standardized element wrapper tokens */
+  color: var(--text-main);
   font-size: 1rem;
-  font-family: inherit;
-  transition: border-color 0.3s ease;
+  font-family: var(--font-body);
+  transition: var(--transition-smooth);
 }
 
-/* Change border color on focus */
+/* Focus input track boundaries wrap dynamically to active brand saffron */
 .input-group input:focus, 
 .input-group select:focus, 
 .input-group textarea:focus {
   outline: none;
-  border-color: #e67e22;
+  border-color: var(--color-saffron);
+  box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1);
 }
 
-/* Placeholder text color */
+/* Placeholder description text color shifts adaptively across configurations */
 ::placeholder {
-  color: #888888;
+  color: var(--text-muted);
+  opacity: 0.7;
 }
 
 .submit-btn {
   margin-top: 10px;
   width: 100%;
+  /* Reuses standardized .cta-button property layout patterns natively */
+  background-color: var(--color-saffron);
+  color: #ffffff;
+  border: none;
+  padding: 14px 28px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition-smooth);
 }
 
-/* --- SUCCESS MESSAGE --- */
+.submit-btn:hover {
+  background-color: var(--color-saffron-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+/* --- ACTION SUCCESS PANEL CONTROLS --- */
 .success-message {
   text-align: center;
   padding: 40px 20px;
 }
 
 .success-message h3 {
-  color: #e67e22;
-  font-size: 2rem;
+  font-family: var(--font-headings);
+  color: var(--color-saffron);
+  font-size: 2.2rem;
   margin-bottom: 15px;
 }
 
 .success-message p {
-  color: #cccccc;
-  line-height: 1.6;
+  color: var(--text-muted);
+  line-height: 1.65;
   margin-bottom: 30px;
 }
 
-/* --- INFO BOX STYLING --- */
+/* --- CONTACT INFO SIDE-BAR STYLING --- */
 .contact-info h3 {
-  color: #e67e22;
+  font-family: var(--font-headings);
+  color: var(--text-main);
   margin-top: 0;
   margin-bottom: 25px;
-  font-size: 1.5rem;
-  border-bottom: 1px solid #444;
+  font-size: 1.6rem;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 15px;
+  transition: var(--transition-smooth);
 }
 
 .info-item {
-  margin-bottom: 25px;
+  margin-bottom: 30px; /* Enhanced visual split vertical space tracking */
 }
 
 .info-item h4 {
-  color: #ffffff;
+  font-family: var(--font-body);
+  color: var(--text-main);
   margin-bottom: 8px;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
+  font-weight: 600;
 }
 
 .info-item p {
-  color: #cccccc;
+  color: var(--text-muted);
   line-height: 1.6;
   margin: 0;
 }
@@ -148,17 +182,34 @@
 .info-item .note {
   font-size: 0.85rem;
   font-style: italic;
-  color: #999999;
-  margin-top: 5px;
+  color: var(--text-muted);
+  opacity: 0.8;
+  margin-top: 6px;
 }
 
-/* --- MOBILE RESPONSIVENESS --- */
+/* =======================================================
+   📱 RESPONSIVE INTERFACE & PHONE ADAPTATIONS
+   ======================================================= */
 @media (max-width: 768px) {
+  .contact-page {
+    padding: 60px 16px;
+  }
+
+  .contact-header {
+    margin-bottom: 40px;
+  }
+
+  .contact-header h2 {
+    font-size: 2.2rem;
+  }
+
   .contact-content {
-    flex-direction: column; /* Stacks the form and info on phones */
+    flex-direction: column; /* Stacks the layouts gracefully on screen shrinkages */
+    gap: 30px;
   }
   
   .contact-form-container, .contact-info {
     width: 100%;
+    padding: 30px 20px; /* Condensed breathing bounds for thin frames */
   }
 }

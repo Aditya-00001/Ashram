@@ -65,34 +65,34 @@ export default function Home() {
         </div>
       </section>
       {/* --- LIVE PUJA SCHEDULER WIDGETS --- */}
-      <section style={{ padding: '40px 20px', backgroundColor: '#111', borderBottom: '1px solid #333' }}>
+      <section style={{ padding: '40px 20px', backgroundColor: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <h2 style={{ textAlign: 'center', color: '#e67e22', marginBottom: '30px' }}>Daily Seva & Schedules</h2>
+          <h2 style={{ textAlign: 'center', color: 'var(--color-saffron)', marginBottom: '30px' }}>Daily Seva & Schedules</h2>
           
           {loadingPujas ? (
-            <p style={{ textAlign: 'center', color: '#888' }}>Loading schedules...</p>
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading schedules...</p>
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center' }}>
               
               {/* WIDGET 1: TODAY's PUJA */}
-              <div style={{ flex: '1 1 300px', backgroundColor: '#1a1a1a', borderLeft: '4px solid #2ecc71', borderRadius: '8px', padding: '25px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
-                <h4 style={{ margin: '0 0 15px 0', color: '#2ecc71', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>
+              <div style={{ flex: '1 1 300px', backgroundColor: 'var(--bg-surface)', borderLeft: '4px solid var(--color-green)', borderRadius: 'var(--radius-card)', padding: '25px', boxShadow: 'var(--shadow-subtle)' }}>
+                <h4 style={{ margin: '0 0 15px 0', color: 'var(--color-green)', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>
                   🟢 Today's Puja
                 </h4>
                 {publicPujas.today ? (
                   <>
-                    <h3 style={{ margin: '0 0 10px 0', fontSize: '1.5rem', color: '#fff' }}>{publicPujas.today.pujaName}</h3>
-                    <p style={{ margin: '5px 0', color: '#ccc', fontSize: '1.1rem' }}>🕒 {formatTime(publicPujas.today.time)}</p>
-                    <p style={{ margin: '15px 0 0 0', color: '#888', fontStyle: 'italic' }}>
-                      Sponsored by: <span style={{ color: '#e67e22', fontWeight: 'bold' }}>{publicPujas.today.sponsorName}</span>
+                    <h3 style={{ margin: '0 0 10px 0', fontSize: '1.5rem', color: 'var(--text-main)' }}>{publicPujas.today.pujaName}</h3>
+                    <p style={{ margin: '5px 0', color: 'var(--text-muted)', fontSize: '1.1rem' }}>🕒 {formatTime(publicPujas.today.time)}</p>
+                    <p style={{ margin: '15px 0 0 0', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                      Sponsored by: <span style={{ color: 'var(--color-saffron)', fontWeight: 'bold' }}>{publicPujas.today.sponsorName}</span>
                     </p>
                   </>
                 ) : (
                   <>
-                    <h3 style={{ margin: '0 0 10px 0', fontSize: '1.3rem', color: '#fff' }}>Daily Nitya Seva</h3>
-                    <p style={{ margin: '5px 0', color: '#ccc' }}>Morning Aarti: 6:00 AM</p>
-                    <p style={{ margin: '5px 0', color: '#ccc' }}>Evening Aarti: 6:30 PM</p>
-                    <p style={{ margin: '15px 0 0 0', color: '#888', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                    <h3 style={{ margin: '0 0 10px 0', fontSize: '1.3rem', color: 'var(--text-main)' }}>Daily Nitya Seva</h3>
+                    <p style={{ margin: '5px 0', color: 'var(--text-muted)' }}>Morning Aarti: 6:00 AM</p>
+                    <p style={{ margin: '5px 0', color: 'var(--text-muted)' }}>Evening Aarti: 6:30 PM</p>
+                    <p style={{ margin: '15px 0 0 0', color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.9rem' }}>
                       No special sponsored Pujas today.
                     </p>
                   </>
@@ -100,21 +100,21 @@ export default function Home() {
               </div>
 
               {/* WIDGET 2: NEXT UPCOMING PUJA */}
-              <div style={{ flex: '1 1 300px', backgroundColor: '#1a1a1a', borderLeft: '4px solid #e67e22', borderRadius: '8px', padding: '25px', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
-                <h4 style={{ margin: '0 0 15px 0', color: '#e67e22', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>
+              <div style={{ flex: '1 1 300px', backgroundColor: 'var(--bg-surface)', borderLeft: '4px solid var(--color-saffron)', borderRadius: 'var(--radius-card)', padding: '25px', boxShadow: 'var(--shadow-subtle)' }}>
+                <h4 style={{ margin: '0 0 15px 0', color: 'var(--color-saffron)', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>
                   ⏳ Next Upcoming Puja
                 </h4>
                 {publicPujas.upcoming ? (
                   <>
-                    <h3 style={{ margin: '0 0 10px 0', fontSize: '1.5rem', color: '#fff' }}>{publicPujas.upcoming.pujaName}</h3>
-                    <p style={{ margin: '5px 0', color: '#ccc', fontSize: '1.1rem' }}>📅 {new Date(publicPujas.upcoming.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-                    <p style={{ margin: '5px 0', color: '#ccc', fontSize: '1.1rem' }}>🕒 {formatTime(publicPujas.upcoming.time)}</p>
-                    <p style={{ margin: '15px 0 0 0', color: '#888', fontStyle: 'italic' }}>
-                      Sponsored by: <span style={{ color: '#e67e22', fontWeight: 'bold' }}>{publicPujas.upcoming.sponsorName}</span>
+                    <h3 style={{ margin: '0 0 10px 0', fontSize: '1.5rem', color: 'var(--text-main)' }}>{publicPujas.upcoming.pujaName}</h3>
+                    <p style={{ margin: '5px 0', color: 'var(--text-muted)', fontSize: '1.1rem' }}>📅 {new Date(publicPujas.upcoming.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                    <p style={{ margin: '5px 0', color: 'var(--text-muted)', fontSize: '1.1rem' }}>🕒 {formatTime(publicPujas.upcoming.time)}</p>
+                    <p style={{ margin: '15px 0 0 0', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                      Sponsored by: <span style={{ color: 'var(--color-saffron)', fontWeight: 'bold' }}>{publicPujas.upcoming.sponsorName}</span>
                     </p>
                   </>
                 ) : (
-                  <p style={{ margin: '0', color: '#ccc', display: 'flex', height: '100%', alignItems: 'center' }}>
+                  <p style={{ margin: '0', color: 'var(--text-muted)', display: 'flex', height: '100%', alignItems: 'center' }}>
                     No upcoming special Pujas scheduled at the moment. Check back soon!
                   </p>
                 )}

@@ -1,71 +1,89 @@
-/* Events.css */
+/* =======================================================
+   🕉️ DESIGN SYSTEM UPDATED: Events.css
+   ======================================================= */
+
 .events-page {
-  padding: 80px 20px;
+  /* ✅ FIX: Dynamic page-level background and color themes */
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  padding: 90px 24px; /* Enhanced modern vertical & horizontal whitespace padding */
   min-height: 100vh;
-  background-color: #1a1a1a;
-  color: #eaeaea;
+  transition: var(--transition-smooth);
 }
 
 .events-header {
   text-align: center;
-  margin-bottom: 50px;
+  margin-bottom: 60px; /* Increased padding separation height */
 }
 
 .events-header h2 {
-  font-size: 2.5rem;
-  color: #e67e22;
-  margin-bottom: 10px;
+  font-family: var(--font-headings);
+  font-size: 2.8rem;
+  color: var(--color-saffron);
+  margin-bottom: 15px;
 }
 
 .events-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  max-width: 800px;
+  gap: 24px; /* Enhanced gutter gaps between list records */
+  max-width: 850px;
   margin: 0 auto;
 }
 
+/* --- ADAPTIVE EVENT CARD STRUCTURE --- */
 .event-card {
   display: flex;
-  background-color: #242424;
-  border-radius: 10px;
+  /* ✅ FIX: Card surfaces turn clean white in light / soft charcoal in dark */
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-card);
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease;
+  box-shadow: var(--shadow-subtle);
+  border: 1px solid var(--border-color);
+  transition: var(--transition-smooth);
 }
 
 .event-card:hover {
-  transform: translateX(5px);
-  border-left: 4px solid #e67e22;
+  transform: translateY(-4px) scale(1.01); /* Modern uniform lifting animation instead of just shifting right */
+  box-shadow: var(--shadow-card);
+  border-left: 4px solid var(--color-saffron);
 }
 
+/* --- STRUCTURED CHRONOLOGICAL DATE BLOCK --- */
 .event-date-box {
-  background-color: #333333;
-  padding: 20px;
-  min-width: 120px;
+  /* ✅ FIX: Date ribbon aligns with structured sidebar background variable */
+  background-color: var(--bg-sidebar);
+  padding: 24px;
+  min-width: 130px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-right: 1px solid #444;
+  border-right: 1px solid var(--border-color);
+  transition: var(--transition-smooth);
 }
 
 .event-month {
-  color: #e67e22;
-  font-weight: bold;
+  color: var(--color-saffron);
+  font-family: var(--font-body);
+  font-weight: 700;
   text-transform: uppercase;
   font-size: 1.1rem;
+  letter-spacing: 1px;
 }
 
 .event-day {
-  font-size: 2.5rem;
-  font-weight: bold;
-  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: var(--text-main);
   line-height: 1;
+  margin-top: 4px;
 }
 
+/* --- CONTENT DETAILS VIEW --- */
 .event-details {
-  padding: 25px;
+  padding: 30px;
   flex: 1;
   text-align: left;
 }
@@ -73,59 +91,87 @@
 .event-meta {
   display: flex;
   gap: 15px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   align-items: center;
   flex-wrap: wrap;
 }
 
 .event-badge {
-  background-color: #e67e22;
-  color: white;
-  padding: 4px 10px;
+  background-color: var(--color-saffron);
+  color: #ffffff; /* Contrast text remains white for readability across styles */
+  padding: 5px 12px;
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .event-badge.lunar {
-  background-color: #5b8db8; /* A cool moon-like blue for lunar events */
+  background-color: #4a90e2; /* A crisp, refined moon-like celestial blue */
 }
 
 .event-time {
-  color: #aaaaaa;
+  color: var(--text-muted);
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .event-details h3 {
-  color: #ffffff;
-  margin: 0 0 10px 0;
-  font-size: 1.4rem;
+  font-family: var(--font-headings);
+  color: var(--text-main);
+  margin: 0 0 12px 0;
+  font-size: 1.5rem;
 }
 
 .event-details p {
-  color: #bbbbbb;
+  color: var(--text-muted);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .event-image {
   width: 100%;
-  height: 200px; /* Or whatever height looks best to you */
-  object-fit: cover; /* This prevents the image from stretching/squishing! */
-  border-radius: 8px;
-  margin-top: 5px;
+  height: 220px; 
+  object-fit: cover; 
+  border-radius: var(--radius-button); /* Standardized card border radius token */
+  border: 1px solid var(--border-color);
+  margin-top: 15px;
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition-smooth);
 }
 
-/* Mobile responsiveness */
+.event-image:hover {
+  box-shadow: var(--shadow-card);
+}
+
+/* =======================================================
+   📱 RESPONSIVE INTERFACE & PHONE ADAPTATIONS
+   ======================================================= */
 @media (max-width: 600px) {
+  .events-page {
+    padding: 60px 16px;
+  }
+  
   .event-card {
     flex-direction: column;
   }
+  
   .event-date-box {
     border-right: none;
-    border-bottom: 1px solid #444;
-    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px;
     flex-direction: row;
-    gap: 10px;
+    gap: 12px;
+    min-width: 100%;
+  }
+
+  .event-day {
+    font-size: 1.8rem;
+    margin-top: 0;
+  }
+
+  .event-details {
+    padding: 20px;
   }
 }

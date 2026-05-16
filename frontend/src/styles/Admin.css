@@ -1,220 +1,265 @@
-/* Admin.css */
+/* =======================================================
+   🕉️ DESIGN SYSTEM UPDATED: Admin.css
+   ======================================================= */
 
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background-color: #121212;
-  color: #eaeaea;
+  /* ✅ FIX: Smooth page-level primary canvas color mapping */
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  transition: var(--transition-smooth);
 }
 
-/* --- SIDEBAR --- */
+/* --- STRUCTURED MANAGEMENT SIDEBAR --- */
 .admin-sidebar {
   width: 250px;
-  background-color: #1e1e1e;
-  padding: 30px 20px;
+  /* ✅ FIX: Align admin navigation shelf with design tokens */
+  background-color: var(--bg-sidebar);
+  padding: 40px 24px; /* Enhanced modern padding metrics */
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #333;
+  border-right: 1px solid var(--border-color);
+  transition: var(--transition-smooth);
 }
 
 .admin-sidebar h2 {
-  color: #e67e22;
+  font-family: var(--font-headings);
+  color: var(--color-saffron);
   margin-top: 0;
   margin-bottom: 40px;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
+  letter-spacing: 0.5px;
 }
 
 .admin-nav {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px; /* Enhanced navigation track spacing gaps */
   flex-grow: 1;
 }
 
 .admin-nav button {
   background: transparent;
   border: none;
-  color: #bbbbbb;
+  color: var(--text-muted);
   text-align: left;
-  padding: 12px 15px;
-  border-radius: 6px;
+  padding: 12px 16px;
+  border-radius: var(--radius-button); /* Standardized elements corner token */
   cursor: pointer;
-  font-size: 1.05rem;
-  transition: all 0.2s ease;
+  font-family: var(--font-body);
+  font-size: 1.02rem;
+  font-weight: 500;
+  transition: var(--transition-smooth);
 }
 
-.admin-nav button:hover, .admin-nav button.active {
-  background-color: #333;
-  color: #ffffff;
+.admin-nav button:hover {
+  background-color: var(--bg-surface);
+  color: var(--color-saffron);
+}
+
+.admin-nav button.active {
+  background-color: var(--color-saffron);
+  color: #ffffff; /* Contrast text remains crisp white on active focus */
+  box-shadow: var(--shadow-subtle);
 }
 
 .logout-btn {
-  background-color: #ff4757;
-  color: white;
+  background-color: var(--color-error); /* Explicitly bound to system safety crimson token */
+  color: #ffffff;
   border: none;
-  padding: 12px;
-  border-radius: 6px;
-  cursor: pointer;
+  padding: 14px;
+  border-radius: var(--radius-button);
+  font-family: var(--font-body);
   font-weight: bold;
+  cursor: pointer;
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition-smooth);
 }
 
-/* --- MAIN CONTENT --- */
+.logout-btn:hover {
+  background-color: #e74c3c;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+
+/* --- MAIN CONTENT EXECUTIVE CANVAS --- */
 .admin-content {
   flex-grow: 1;
   padding: 40px;
-  background-color: #121212;
+  background-color: var(--bg-primary);
+  transition: var(--transition-smooth);
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 40px; /* Elevated whitespace separation tracking */
 }
 
 .admin-panel h3 {
-  color: #ffffff;
-  font-size: 1.8rem;
+  font-family: var(--font-headings);
+  color: var(--text-main);
+  font-size: 2rem;
   margin: 0;
 }
 
 .add-btn {
-  background-color: #e67e22;
-  color: white;
+  background-color: var(--color-saffron);
+  color: #ffffff;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
+  padding: 12px 24px; /* Broadened click metrics for refined layout presence */
+  border-radius: var(--radius-button);
   cursor: pointer;
+  font-family: var(--font-body);
   font-weight: bold;
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition-smooth);
 }
 
-/* --- TABLES --- */
+.add-btn:hover {
+  background-color: var(--color-saffron-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+/* --- SYSTEM ENTERPRISE DATA TABLES --- */
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  background-color: #1e1e1e;
-  border-radius: 8px;
+  /* ✅ FIX: Table panel adapts cleanly to active component surface background tokens */
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-card);
   overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition-smooth);
 }
 
 .admin-table th, .admin-table td {
-  padding: 15px 20px;
+  padding: 16px 24px;
   text-align: left;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color); /* Adaptive clean row divider */
+  font-family: var(--font-body);
+  transition: var(--transition-smooth);
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-table tr:hover td {
+  background-color: var(--bg-primary); /* Modern path tracking highlight on row focus hover */
 }
 
 .admin-table th {
-  background-color: #242424;
-  color: #e67e22;
+  background-color: var(--bg-sidebar); /* Column headers match structural split backgrounds */
+  color: var(--color-saffron);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
 }
 
 .edit-btn, .delete-btn {
-  padding: 6px 12px;
+  padding: 8px 16px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-button);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
-  margin-right: 10px;
+  transition: var(--transition-smooth);
 }
 
-.edit-btn { background-color: #3498db; color: white; }
-.delete-btn { background-color: #e74c3c; color: white; }
+.edit-btn { 
+  background-color: #3498db; 
+  color: #ffffff; 
+}
+.edit-btn:hover { 
+  background-color: #2980b9; 
+  transform: translateY(-1px);
+}
+
+.delete-btn { 
+  background-color: var(--color-error); 
+  color: #ffffff; 
+}
+.delete-btn:hover { 
+  background-color: #e74c3c; 
+  transform: translateY(-1px);
+}
 
 .status.success {
   color: #2ecc71;
-  font-weight: bold;
+  font-weight: 700;
 }
 
-/* --- MESSAGE CARDS --- */
+/* --- COMMUNICATION MESSAGE OVERLAY DECKS --- */
 .message-card {
-  background-color: #1e1e1e;
-  padding: 20px;
-  border-radius: 8px;
-  border-left: 4px solid #3498db;
-  margin-top: 20px;
+  background-color: var(--bg-surface);
+  padding: 24px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid #3498db; /* Elegant communication accent boundary pin */
+  margin-top: 24px;
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition-smooth);
+  text-align: left;
 }
 
-.message-card h4 { margin: 0 0 5px 0; color: #fff; }
-.msg-date { font-size: 0.85rem; color: #888; margin-bottom: 15px; }
+.message-card:hover {
+  box-shadow: var(--shadow-card);
+}
+
+.message-card h4 { 
+  font-family: var(--font-headings);
+  margin: 0 0 6px 0; 
+  color: var(--text-main); 
+  font-size: 1.25rem;
+}
+
+.msg-date { 
+  font-size: 0.85rem; 
+  color: var(--text-muted); 
+  margin-bottom: 15px; 
+}
+
 .reply-btn {
   background-color: transparent;
-  border: 1px solid #bbbbbb;
-  color: #bbbbbb;
-  padding: 8px 15px;
-  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 8px 20px;
+  border-radius: var(--radius-button);
+  font-family: var(--font-body);
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 15px;
+  transition: var(--transition-smooth);
 }
 
-
-/* --- MOBILE RESPONSIVENESS --- */
-@media (max-width: 768px) {
-  .admin-layout {
-    flex-direction: column; /* Stacks the sidebar on top of the content */
-  }
-
-  /* Adjust Sidebar to sit at the top */
-  .admin-sidebar {
-    width: 100%;
-    padding: 20px;
-    border-right: none;
-    border-bottom: 1px solid #333;
-  }
-
-  .admin-sidebar h2 {
-    text-align: center;
-    margin-bottom: 20px;
-  }
-
-  /* Turn the vertical nav into a horizontal row of buttons */
-  .admin-nav {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-  }
-
-  .admin-nav button {
-    flex: 1;
-    min-width: 120px; /* Ensures buttons don't get too tiny */
-    text-align: center;
-  }
-
-  .logout-btn {
-    margin-top: 15px;
-  }
-
-  /* Adjust the main content area */
-  .admin-content {
-    padding: 20px 15px;
-  }
-
-  .panel-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 15px; /* Adds breathing room between the title and the Add button */
-  }
-
-  /* Fix the Table Squishing */
-  .admin-table {
-    display: block; /* Changes table behavior to allow scrolling */
-    overflow-x: auto; /* Adds a horizontal scrollbar just for the table */
-    white-space: nowrap; /* Forces text to stay on one line instead of wrapping */
-  }
+.reply-btn:hover {
+  border-color: var(--color-saffron);
+  color: var(--color-saffron);
+  background-color: var(--bg-primary);
 }
 
-/* --- ADMIN FORMS (Add/Edit Events) --- */
+/* --- CONFIGURATION & EVENT EDITING FORMS --- */
 .admin-form {
-  background-color: #1e1e1e;
-  padding: 30px;
-  border-radius: 8px;
+  background-color: var(--bg-surface);
+  padding: 40px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  transition: var(--transition-smooth);
 }
 
 .form-row {
   display: flex;
-  gap: 20px;
+  gap: 24px;
 }
 
 .form-row .input-group {
@@ -222,28 +267,35 @@
 }
 
 .admin-form .input-group label {
-  color: #e67e22;
+  color: var(--color-saffron);
   margin-bottom: 8px;
-  font-weight: 500;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: inline-block;
+  text-align: left;
 }
 
 .admin-form input,
 .admin-form select,
 .admin-form textarea {
   width: 100%;
-  padding: 12px;
-  background-color: #242424;
-  border: 1px solid #444;
-  border-radius: 6px;
-  color: #fff;
+  padding: 12px 16px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-button);
+  color: var(--text-main);
+  font-family: var(--font-body);
   font-size: 1rem;
+  transition: var(--transition-smooth);
 }
 
 .admin-form input:focus,
 .admin-form select:focus,
 .admin-form textarea:focus {
   outline: none;
-  border-color: #e67e22;
+  border-color: var(--color-saffron);
+  box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1);
 }
 
 .form-actions {
@@ -255,33 +307,114 @@
 
 .cancel-btn {
   background-color: transparent;
-  color: #bbb;
-  border: 1px solid #bbb;
-  padding: 10px 20px;
-  border-radius: 6px;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  padding: 12px 24px;
+  border-radius: var(--radius-button);
+  font-family: var(--font-body);
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-smooth);
 }
 
 .cancel-btn:hover {
-  background-color: #333;
-  color: #fff;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  border-color: var(--text-muted);
 }
 
 .save-btn {
-  background-color: #e67e22;
-  color: white;
+  background-color: var(--color-saffron);
+  color: #ffffff;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
+  padding: 12px 24px;
+  border-radius: var(--radius-button);
   cursor: pointer;
+  font-family: var(--font-body);
   font-weight: bold;
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition-smooth);
 }
 
-/* Mobile Fix for form rows */
+.save-btn:hover {
+  background-color: var(--color-saffron-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+
+/* =======================================================
+   📱 ADAPTIVE MOBILE BREAKPOINTS & VIEWPORTS (< 768px)
+   ======================================================= */
 @media (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column; /* Stack the layout elements vertically on screens */
+  }
+
+  .admin-sidebar {
+    width: 100%;
+    padding: 30px 20px;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .admin-sidebar h2 {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  /* Structural transformation from vertical column rows into flexible wrap-chips */
+  .admin-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .admin-nav button {
+    flex: 1;
+    min-width: 130px; /* Enhanced cell width alignment */
+    text-align: center;
+    padding: 10px 12px;
+  }
+
+  .logout-btn {
+    margin-top: 15px;
+    width: 100%;
+  }
+
+  .admin-content {
+    padding: 30px 16px;
+  }
+
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px; 
+  }
+
+  /* Defensive scrolling table behavior layout optimization */
+  .admin-table {
+    display: block; 
+    overflow-x: auto; 
+    white-space: nowrap; 
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .admin-table::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  .admin-table::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 3px;
+  }
+
   .form-row {
     flex-direction: column;
-    gap: 20px;
+    gap: 24px;
+  }
+  
+  .admin-form {
+    padding: 24px 16px;
   }
 }

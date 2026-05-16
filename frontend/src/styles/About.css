@@ -1,37 +1,45 @@
-/* About.css */
+/* =======================================================
+   🕉️ DESIGN SYSTEM UPDATED: About.css
+   ======================================================= */
 
 .about-page {
   min-height: 100vh;
-  background-color: #1a1a1a;
-  color: #eaeaea;
-  padding-bottom: 60px;
+  /* ✅ FIX: Smooth layout palette integration */
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  padding-bottom: 80px; /* Enhanced vertical whitespace */
+  transition: var(--transition-smooth);
 }
 
-/* --- HEADER --- */
+/* --- HEADER PANEL --- */
 .about-header {
-  background-color: #242424;
-  padding: 60px 20px;
+  /* ✅ FIX: Adapts cleanly across shifts */
+  background-color: var(--bg-sidebar);
+  padding: 80px 20px; /* Enhanced top structural hierarchy space */
   text-align: center;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
+  transition: var(--transition-smooth);
 }
 
 .about-header h1 {
+  font-family: var(--font-headings);
   font-size: 3rem;
-  color: #e67e22; /* Saffron accent */
+  color: var(--color-saffron); /* Links to brand accent token */
   margin-bottom: 15px;
 }
 
 .about-header .subtitle {
   font-size: 1.2rem;
-  color: #bbbbbb;
+  color: var(--text-muted); /* Soft reading visibility layout */
   font-style: italic;
 }
 
-/* --- STORY SECTION --- */
+/* --- STORY WRAPPER SECTION --- */
 .story-content {
   display: flex;
   align-items: center;
-  gap: 50px;
+  gap: 60px; /* More modern whitespace separator layout */
+  padding: 40px 0;
 }
 
 .story-text {
@@ -41,7 +49,7 @@
 .story-text p {
   font-size: 1.1rem;
   line-height: 1.8;
-  color: #cccccc;
+  color: var(--text-muted); /* High comfort reading contrast */
   margin-bottom: 20px;
 }
 
@@ -51,72 +59,94 @@
 
 .story-image {
   width: 100%;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-card); /* Unified visual grid tokens */
+  box-shadow: var(--shadow-card);
   aspect-ratio: 4 / 3;
   object-fit: cover;
+  border: 1px solid var(--border-color);
+  transition: var(--transition-smooth);
 }
 
-/* --- VALUES SECTION --- */
+/* --- VALUES WIDGET CARD GRID --- */
 .values-section {
-  background-color: #242424;
+  /* ✅ FIX: Structured section separator accent container color */
+  background-color: var(--bg-sidebar);
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 80px 20px;
+  transition: var(--transition-smooth);
 }
 
 .values-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 30px;
 }
 
 .value-card {
-  background-color: #333333;
-  padding: 30px;
-  border-radius: 10px;
+  /* ✅ FIX: Card elements turn clean surface white in light / crisp soft gray in dark */
+  background-color: var(--bg-surface);
+  padding: 40px 30px;
+  border-radius: var(--radius-card);
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-subtle);
+  border: 1px solid var(--border-color);
+  transition: var(--transition-smooth);
+}
+
+.value-card:hover {
+  transform: translateY(-4px); /* Interactive dynamic hover lifting */
+  box-shadow: var(--shadow-card);
+  border-color: var(--color-saffron);
 }
 
 .value-card h3 {
-  color: #ffffff;
+  font-family: var(--font-headings);
+  color: var(--text-main);
   font-size: 1.5rem;
   margin-bottom: 15px;
 }
 
 .value-card p {
-  color: #bbbbbb;
+  color: var(--text-muted);
   line-height: 1.6;
 }
 
-/* --- MINI GALLERY PREVIEW --- */
+/* --- MINI GALLERY PREVIEW PANEL --- */
 .about-gallery-section {
   text-align: center;
+  padding: 80px 0;
 }
 
 .about-gallery-section p {
-  color: #cccccc;
+  color: var(--text-muted);
   margin-bottom: 40px;
 }
 
 .preview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  gap: 24px;
   margin-bottom: 40px;
 }
 
 .preview-img {
   width: 100%;
-  aspect-ratio: 1 / 1; /* Makes the preview images perfect squares */
+  aspect-ratio: 1 / 1; 
   object-fit: cover;
-  border-radius: 8px;
-  transition: transform 0.3s ease;
+  border-radius: var(--radius-button); /* Standardized element corner radius token */
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-subtle);
+  transition: var(--transition-smooth);
 }
 
 .preview-img:hover {
-  transform: scale(1.03); /* Slight zoom effect on hover */
+  transform: scale(1.04); 
+  box-shadow: var(--shadow-card);
+  border-color: var(--color-saffron);
 }
 
-/* Secondary Button Style */
+/* --- STANDARDIZED ACTION TRIGGER BUTTON --- */
 .gallery-link-wrapper {
   margin-top: 20px;
 }
@@ -125,29 +155,39 @@
   display: inline-block;
   text-decoration: none;
   background-color: transparent;
-  color: #e67e22;
-  border: 2px solid #e67e22;
+  color: var(--color-saffron);
+  border: 2px solid var(--color-saffron);
   padding: 12px 30px;
   font-size: 1.1rem;
-  border-radius: 6px;
+  border-radius: var(--radius-button); /* Unified trigger radius token */
   font-weight: bold;
-  transition: all 0.3s ease;
+  transition: var(--transition-smooth);
 }
 
 .outline-btn:hover {
-  background-color: #e67e22;
-  color: #ffffff;
+  background-color: var(--color-saffron);
+  color: #ffffff; /* Contrast text fallback across selections */
   transform: translateY(-2px);
+  box-shadow: var(--shadow-subtle);
 }
 
-/* --- MOBILE RESPONSIVENESS --- */
+/* --- PHONE & CONTAINER BREAKPOINT OPTIMIZATION --- */
 @media (max-width: 768px) {
   .story-content {
-    flex-direction: column; /* Stacks the text and image on phones */
+    flex-direction: column; 
     text-align: center;
+    gap: 40px;
   }
   
+  .about-header {
+    padding: 60px 20px;
+  }
+
   .about-header h1 {
     font-size: 2.2rem;
+  }
+  
+  .values-section, .about-gallery-section {
+    padding: 60px 20px;
   }
 }

@@ -1410,11 +1410,25 @@ export default function AdminDashboard() {
                       {(user.role === 'admin' || user.role === 'superadmin') && <th>Actions</th>}
                     </tr>
                   </thead>
+                  {/* --- UPDATED FAQ TABLE ROW --- */}
                   <tbody>
                     {faqList.map(faq => (
                       <tr key={faq._id} style={{ opacity: faq.isActive ? 1 : 0.6 }}>
-                        <td><span style={{ backgroundColor: '#333', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{faq.category}</span></td>
-                        <td style={{ fontWeight: 'bold' }}>{faq.question}</td>
+                        <td>
+                          {/* ✅ FIX: Swapped hardcoded #333 for a responsive design system variable */}
+                          <span style={{ 
+                            backgroundColor: 'var(--bg-sidebar)', 
+                            color: 'var(--text-main)',
+                            padding: '4px 8px', 
+                            borderRadius: '4px', 
+                            fontSize: '0.8rem',
+                            border: '1px solid var(--border-color)',
+                            transition: 'var(--transition-smooth)'
+                          }}>
+                            {faq.category}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: 'bold', color: 'var(--text-main)' }}>{faq.question}</td>
                         <td>{faq.isActive ? <span style={{color: '#2ecc71'}}>Active</span> : <span style={{color: '#888'}}>Draft</span>}</td>
                         {(user.role === 'admin' || user.role === 'superadmin') && (
                           <td>

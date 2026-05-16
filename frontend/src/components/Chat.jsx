@@ -8,7 +8,12 @@ import {
   decryptMessage,
   generateGroupMessageKey,
   encryptKeyForRecipient,
-  decryptKeyBuffer 
+  decryptKeyBuffer,
+  unwrapPrivateKey,
+  wrapPrivateKey, 
+  generateKeyPair,
+  exportPublicKey,
+  exportPrivateKey
 } from '../utils/cryptoUtils';
 import EmojiPicker from 'emoji-picker-react';
 import io from 'socket.io-client';
@@ -283,6 +288,13 @@ export default function Chat() {
   const peerVideoRef = useRef();
   const connectionRef = useRef();
   const localStreamRef = useRef();
+
+  // --- Chat PIN Vault States ---
+  const [vaultStatus, setVaultStatus] = useState('checking'); // 'checking' | 'setup_required' | 'locked' | 'unlocked'
+  const [chatPin, setChatPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [escrowParams, setEscrowParams] = useState(null);
+  const [vaultError, setVaultError] = useState('');
 
   // --- 1. INITIALIZE SOCKET & FETCH INBOX ---
   useEffect(() => {
@@ -652,6 +664,96 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [messages]);
 
+  useEffect(() => {
+    const checkVaultStatus = async () => {
+      const localKey = localStorage.getItem(`e2ee_priv_${user._id}`);
+      if (localKey) {
+        setVaultStatus('unlocked');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/escrow`, {
+          headers: { 'Authorization': `Bearer ${user.token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.escrowedPrivateKey && data.escrowedPrivateKey.length > 0) {
+            setEscrowParams(data);
+            setVaultStatus('locked');
+          } else {
+            setVaultStatus('setup_required');
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch vault configuration", err);
+      }
+    };
+    if (user) checkVaultStatus();
+  }, [user]);
+
+  const handleInitializeVault = async (e) => {
+    e.preventDefault();
+    if (chatPin.length < 4) return setVaultError("PIN/Passphrase must be at least 4 characters.");
+    if (chatPin !== confirmPin) return setVaultError("PIN entries do not match.");
+
+    try {
+      // 1. Generate fresh unique E2EE Key Pair
+      const keyPair = await generateKeyPair();
+      const pubJWK = await exportPublicKey(keyPair.publicKey);
+      const privJWK = await exportPrivateKey(keyPair.privateKey);
+
+      // 2. Wrap private key with the user's PIN
+      const escrowPayload = await wrapPrivateKey(privJWK, chatPin);
+      
+      // 3. Put public key in payload
+      escrowPayload.publicKey = pubJWK;
+
+      // 4. Save to Database
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/escrow`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+        body: JSON.stringify(escrowPayload)
+      });
+
+      if (res.ok) {
+        localStorage.setItem(`e2ee_priv_${user._id}`, JSON.stringify(privJWK));
+        setVaultStatus('unlocked');
+        setChatPin('');
+        setConfirmPin('');
+        setVaultError('');
+      }
+    } catch (err) {
+      console.error("Initialization failed", err);
+      setVaultError("Failed to initialize vault container.");
+    }
+  };
+
+  const handleUnlockVault = async (e) => {
+    e.preventDefault();
+    if (!chatPin) return;
+
+    try {
+      const decryptedPrivKey = await unwrapPrivateKey(
+        escrowParams.escrowedPrivateKey,
+        escrowParams.escrowSalt,
+        escrowParams.escrowIv,
+        chatPin
+      );
+
+      localStorage.setItem(`e2ee_priv_${user._id}`, JSON.stringify(decryptedPrivKey));
+      setVaultStatus('unlocked');
+      setChatPin('');
+      setVaultError('');
+      
+      // Force reload active chat messages to decrypt immediately
+      window.location.reload();
+    } catch (err) {
+      console.error("Decryption wrong PIN", err);
+      setVaultError("Incorrect Passphrase or PIN. Unable to unlock cryptographic key.");
+    }
+  };
+
   // const handleChatSelect = (convo) => {
     // if (activeChat && activeChat._id === convo._id) return;
   //   setActiveChat(convo);
@@ -764,10 +866,18 @@ export default function Chat() {
 
     groupEnvelopes = {};
     for (const p of activeChat.participants) {
-      if (!p.publicKey) continue;
-      const theirPubKey = await importPublicKey(p.publicKey);
-      groupEnvelopes[p._id] = await encryptKeyForRecipient(msgKey, myPrivKey, theirPubKey);
-
+      if (!p.publicKey) continue; // Skip members who haven't initialized their keys yet
+      
+      try {
+        // Import the participant's public key securely
+        const theirPubKey = await importPublicKey(p.publicKey);
+        
+        // Lock a distinct copy of the message key inside this member's envelope
+        groupEnvelopes[p._id] = await encryptKeyForRecipient(msgKey, myPrivKey, theirPubKey);
+      } catch (err) {
+        // Captures errors gracefully if a single key corrupts, preventing a complete send failure
+        console.error(`Failed to lock digital envelope for user ${p._id}:`, err);
+      }
     }} else if (!activeChat.isGroup && receiver) {
       if (!receiver.publicKey) {
         alert("This user hasn't updated their app to support encryption yet!");
@@ -1023,6 +1133,58 @@ export default function Chat() {
   };
 
   if (!user) return <div style={{textAlign: 'center', padding: '50px'}}>Please log in to access Community Chat.</div>;
+
+
+  if (vaultStatus === 'checking') {
+    return (
+      <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <SpiritualLoader size="small" message="Synchronizing Secure Chat Containers..." />
+      </div>
+    );
+  }
+
+  if (vaultStatus === 'locked' || vaultStatus === 'setup_required') {
+    return (
+      <div className="chat-modal-overlay" style={{ zIndex: 6000, backgroundColor: '#0a0a0a' }}>
+        <div className="chat-modal-content" style={{ maxWidth: '450px', padding: '35px', textAlign: 'center', borderRadius: '16px', borderTop: '4px solid #e67e22' }}>
+          <h2 style={{ color: '#e67e22', marginBottom: '10px' }}>
+            {vaultStatus === 'setup_required' ? '🕉️ Set Your Chat Passphrase' : '🔒 Secure Chat Container Locked'}
+          </h2>
+          <p style={{ color: '#888', fontSize: '0.9rem', marginBottom: '25px', lineHeight: '1.5' }}>
+            {vaultStatus === 'setup_required' 
+              ? 'Create a private PIN or Passphrase to secure your end-to-end encrypted conversations across all devices. The server never stores this secret.'
+              : 'Enter your custom Chat PIN or Passphrase to download and unwrap your end-to-end encryption keys.'}
+          </p>
+
+          <form onSubmit={vaultStatus === 'setup_required' ? handleInitializeVault : handleUnlockVault}>
+            <input 
+              type="password"
+              placeholder={vaultStatus === 'setup_required' ? "Enter Secure PIN / Passphrase" : "Enter PIN to Unlock"}
+              value={chatPin}
+              onChange={(e) => setChatPin(e.target.value)}
+              style={{ width: '100%', padding: '12px', marginBottom: '15px', backgroundColor: '#111', color: '#fff', border: '1px solid #333', borderRadius: '8px', textAlign: 'center', fontSize: '1.1rem' }}
+            />
+
+            {vaultStatus === 'setup_required' && (
+              <input 
+                type="password"
+                placeholder="Confirm PIN / Passphrase"
+                value={confirmPin}
+                onChange={(e) => setConfirmPin(e.target.value)}
+                style={{ width: '100%', padding: '12px', marginBottom: '15px', backgroundColor: '#111', color: '#fff', border: '1px solid #333', borderRadius: '8px', textAlign: 'center', fontSize: '1.1rem' }}
+              />
+            )}
+
+            {vaultError && <p style={{ color: '#ff4757', fontSize: '0.85rem', marginBottom: '15px' }}>{vaultError}</p>}
+
+            <button type="submit" className="cta-button" style={{ width: '100%', padding: '12px', fontSize: '1rem', fontWeight: 'bold' }}>
+              {vaultStatus === 'setup_required' ? 'Initialize Keys & Vault' : 'Unlock Chat History'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`chat-container ${activeChat ? 'mobile-chat-open' : ''}`}>
