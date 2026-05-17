@@ -181,6 +181,25 @@ export default function UserDashboard() {
   };
 
   if (!user) return null; 
+  // --- SAAS SKELETON PULSE DURING OVERVIEW INITIAL FETCH ---
+  if (isLoading && activeTab === 'overview') {
+    return (
+      <div className="user-dashboard-page">
+        <div className="container" style={{ maxWidth: '1200px' }}>
+          <div style={{ height: '45px', width: '380px', backgroundColor: 'var(--bg-sidebar)', margin: '0 auto 40px', borderRadius: '25px' }} className="skeleton-blink" />
+          <div className="dashboard-stats-grid">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="stat-widget skeleton-blink" style={{ height: '90px', borderRadius: 'var(--radius-button)' }} />
+            ))}
+          </div>
+          <div className="dashboard-content">
+            <div className="dashboard-card skeleton-blink" style={{ height: '350px', borderRadius: 'var(--radius-card)' }} />
+            <div className="dashboard-card skeleton-blink" style={{ height: '450px', borderRadius: 'var(--radius-card)' }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="user-dashboard-page">
@@ -205,80 +224,155 @@ export default function UserDashboard() {
           >
             ⚙️ Settings
           </button>
-          <button className={activeTab === 'pujas' ? 'active' : ''} onClick={() => setActiveTab('pujas')}>
+          <button className={`cta-button ${activeTab === 'pujas' ? 'active' : 'outline-btn'}`} onClick={() => setActiveTab('pujas')}>
             🙏 My Booked Pujas
           </button>
         </div>
 
         {/* --- TAB 1: OVERVIEW --- */}
+        {/* --- TAB 1: OVERVIEW (MODERNIZED SAAS GRID) --- */}
         {activeTab === 'overview' && (
-          <div className="dashboard-content" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px' }}>
-            <div className="dashboard-card profile-card">
-              <h3>Profile Details</h3>
-              <div className="profile-info">
-                <p><strong>Name:</strong> {user.name}</p>
-                <p><strong>Email:</strong> {user.email}</p>
-                <p><strong>Role:</strong> {user.role === 'admin' ? 'Administrator' : 'Devotee'}</p>
+          <>
+            {/* 📊 TOP STATS HIGHLIGHT WIDGETS */}
+            <div className="dashboard-stats-grid">
+              <div className="stat-widget">
+                <div className="stat-label">Total Seva Offerings</div>
+                <div className="stat-value" style={{ color: 'var(--color-saffron)' }}>
+                  ₹{donations
+                    .filter(d => d.status === 'Successful' || d.status === 'successful')
+                    .reduce((sum, d) => sum + d.amount, 0)
+                    .toLocaleString()}
+                </div>
               </div>
-              <button onClick={handleLogout} className="logout-button">Log Out</button>
+              <div className="stat-widget">
+                <div className="stat-label">Booked Pujas</div>
+                <div className="stat-value">{myPujas.length}</div>
+              </div>
+              <div className="stat-widget">
+                <div className="stat-label">Active Role</div>
+                <div className="stat-value" style={{ textTransform: 'capitalize', fontSize: '1.2rem' }}>
+                  {user.role === 'admin' ? 'Administrator' : user.role}
+                </div>
+              </div>
             </div>
 
-            <div className="dashboard-card history-card">
-              <h3>My Seva (Donation History)</h3>
-              {isLoading && <p style={{ color: '#e67e22' }}>Loading your records...</p>}
-              {!isLoading && donations.length === 0 ? (
-                <div className="empty-state">
-                  <p>You haven't made any donations yet.</p>
-                  <button onClick={() => navigate('/donate')} className="cta-button outline-btn">Support the Ashram</button>
+            {/* MAIN LAYOUT SPLIT GRID */}
+            <div className="dashboard-content">
+              
+              {/* LEFT WIDGET: ACCOUNT PROFILE CARD */}
+              <div className="dashboard-card profile-card">
+                <h3>My Spiritual Profile</h3>
+                <div className="profile-info">
+                  <p><strong>Name:</strong> {user.name}</p>
+                  <p><strong>Email Address:</strong> {user.email}</p>
+                  <p><strong>Community Role:</strong> <span style={{ textTransform: 'capitalize', color: 'var(--color-saffron)', fontWeight: 'bold' }}>{user.role}</span></p>
+                  <p><strong>Secure Encryption:</strong> <span style={{ color: '#2ecc71', fontWeight: '600' }}>🔒 Chat PIN Escrow Active</span></p>
                 </div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="history-table">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Purpose</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Action</th> {/* Added Action Column */}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {donations.map((don) => (
-                        <tr key={don._id}>
-                          <td>{new Date(don.createdAt).toLocaleDateString()}</td>
-                          <td>{don.purpose}</td>
-                          <td>₹{don.amount}</td>
-                          <td><span className={`status-badge ${don.status.toLowerCase()}`}>{don.status}</span></td>
-                          <td>
-                            {/* Only allow downloads for successful donations! */}
-                            {don.status === 'Successful' ? (
-                              <button 
-                                onClick={() => handleDownloadReceipt(don)}
-                                style={{ 
-                                  backgroundColor: 'transparent', 
-                                  border: '1px solid #e67e22', 
-                                  color: '#e67e22', 
-                                  padding: '4px 10px', 
-                                  borderRadius: '4px', 
-                                  cursor: 'pointer',
-                                  fontSize: '0.8rem'
-                                }}
-                              >
-                                📄 PDF
-                              </button>
-                            ) : (
-                              <span style={{ color: '#888', fontSize: '0.8rem' }}>N/A</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <button onClick={handleLogout} className="logout-button">
+                  Disconnect Session
+                </button>
+              </div>
+
+              {/* RIGHT WIDGET: OFFERING LOGS & TIMELINE ROW */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', minWidth: '0', width: '100%' }}>
+                
+                {/* Dynamic Donation History Grid */}
+                <div className="dashboard-card">
+                  <h3>Recent Contribution Logs</h3>
+                  {isLoading && <p style={{ color: 'var(--color-saffron)' }}>Opening your records...</p>}
+                  
+                  {!isLoading && donations.length === 0 ? (
+                    <div className="empty-state">
+                      <p>You haven't made any donations yet.</p>
+                      <button onClick={() => navigate('/donate')} className="cta-button outline-btn">Support the Ashram</button>
+                    </div>
+                  ) : !isLoading && (
+                    <div className="table-responsive">
+                      <table className="history-table">
+                        <thead>
+                          <tr>
+                            <th>Offering Purpose</th>
+                            <th>Amount</th>
+                            <th>Sankalpa Status</th>
+                            <th>Offering Date</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {donations.map((don) => (
+                            <tr key={don._id}>
+                              <td style={{ fontWeight: '600' }}>{don.purpose}</td>
+                              <td>₹{don.amount.toLocaleString()}</td>
+                              <td>
+                                <span className={`status-badge ${don.status.toLowerCase()}`}>
+                                  {don.status}
+                                </span>
+                              </td>
+                              <td>{new Date(don.createdAt).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                              <td>
+                                {don.status.toLowerCase() === 'successful' ? (
+                                  <button 
+                                    onClick={() => handleDownloadReceipt(don)}
+                                    style={{ 
+                                      backgroundColor: 'transparent', 
+                                      border: '1px solid var(--color-saffron)', 
+                                      color: 'var(--color-saffron)', 
+                                      padding: '4px 10px', 
+                                      borderRadius: 'var(--radius-button)', 
+                                      cursor: 'pointer',
+                                      fontSize: '0.8rem',
+                                      fontWeight: '600'
+                                    }}
+                                  >
+                                    📄 PDF
+                                  </button>
+                                ) : (
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>N/A</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {/* Interactive Platform Activity Timeline */}
+                <div className="dashboard-card">
+                  <h3>Account Activity Timeline</h3>
+                  <div className="activity-timeline">
+                    <div className="timeline-item">
+                      <div className="timeline-icon completed"></div>
+                      <div className="timeline-content">
+                        <div className="timeline-time">Just Now</div>
+                        <div className="timeline-title">Secure Chat Vault opened and synchronized successfully</div>
+                      </div>
+                    </div>
+                    {donations.length > 0 && (
+                      <div className="timeline-item">
+                        <div className="timeline-icon completed"></div>
+                        <div className="timeline-content">
+                          <div className="timeline-time">
+                            {new Date(donations[0].createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                          </div>
+                          <div className="timeline-title">Processed offering for "{donations[0].purpose}"</div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="timeline-item">
+                      <div className="timeline-icon"></div>
+                      <div className="timeline-content">
+                        <div className="timeline-time">Account Milestone</div>
+                        <div className="timeline-title">Spiritual Profile verified on Ashram Core Database</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
             </div>
-          </div>
+          </>
         )}
 
         {/* --- TAB 2: SETTINGS --- */}

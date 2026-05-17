@@ -64,3 +64,31 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-headings);
 }
+
+/* --- SKELETON LOADING INTERACTIONS SHIM --- */
+.skeleton-blink {
+  animation: skeletonPulse 1.5s infinite ease-in-out;
+  border: none !important;
+  color: transparent !important;
+  cursor: default;
+  user-select: none;
+}
+
+.skeleton-blink * {
+  visibility: hidden;
+}
+
+@keyframes skeletonPulse {
+  0% {
+    opacity: 0.6;
+    background-color: var(--bg-sidebar);
+  }
+  50% {
+    opacity: 1;
+    background-color: var(--border-color);
+  }
+  100% {
+    opacity: 0.6;
+    background-color: var(--bg-sidebar);
+  }
+}
