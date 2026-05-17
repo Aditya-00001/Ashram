@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import '../styles/UserDashboard.css';
 import { jsPDF } from "jspdf";
+import { motion } from 'framer-motion';
 
 export default function UserDashboard() {
   // --- ADDED: setUser to instantly update the UI name ---
@@ -201,6 +202,26 @@ export default function UserDashboard() {
     );
   }
 
+  // --- FRAMER MOTION ANIMATION VARIANTS ---
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15 // This creates the cascade effect!
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 25 },
+    show: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { type: "spring", stiffness: 300, damping: 24 } 
+    }
+  };
+
   return (
     <div className="user-dashboard-page">
       <div className="container" style={{ maxWidth: '1000px', margin: '0 auto' }}>
@@ -229,13 +250,36 @@ export default function UserDashboard() {
           </button>
         </div>
 
-        {/* --- TAB 1: OVERVIEW --- */}
         {/* --- TAB 1: OVERVIEW (MODERNIZED SAAS GRID) --- */}
         {activeTab === 'overview' && (
-          <>
+          <motion.div 
+            variants={containerVariants} 
+            initial="hidden" 
+            animate="show"
+            transition={{
+              duration:1.5,
+              ease:"easeInOut",
+              damping: 15
+            }}
+          >
             {/* 📊 TOP STATS HIGHLIGHT WIDGETS */}
-            <div className="dashboard-stats-grid">
-              <div className="stat-widget">
+            <motion.div variants={itemVariants} 
+            className="dashboard-stats-grid"
+            transition={{
+              duration:3,
+              ease:"easeInOut",
+              damping: 15
+            }}
+            >
+              {/* <div className="stat-widget"> */}
+              <motion.div variants={itemVariants} 
+                className="stat-widget"
+                transition={{
+                  duration:3,
+                  ease:"easeInOut",
+                  damping: 15
+                }}
+             >
                 <div className="stat-label">Total Seva Offerings</div>
                 <div className="stat-value" style={{ color: 'var(--color-saffron)' }}>
                   ₹{donations
@@ -243,24 +287,38 @@ export default function UserDashboard() {
                     .reduce((sum, d) => sum + d.amount, 0)
                     .toLocaleString()}
                 </div>
-              </div>
-              <div className="stat-widget">
+              </motion.div>
+              <motion.div variants={itemVariants} 
+                className="stat-widget"
+                transition={{
+                  duration:3,
+                  ease:"easeInOut",
+                  damping: 15
+                }}
+             >
                 <div className="stat-label">Booked Pujas</div>
                 <div className="stat-value">{myPujas.length}</div>
-              </div>
-              <div className="stat-widget">
+              </motion.div>
+              <motion.div variants={itemVariants} 
+                className="stat-widget"
+                transition={{
+                  duration:3,
+                  ease:"easeInOut",
+                  damping: 15
+                }}
+             >
                 <div className="stat-label">Active Role</div>
                 <div className="stat-value" style={{ textTransform: 'capitalize', fontSize: '1.2rem' }}>
                   {user.role === 'admin' ? 'Administrator' : user.role}
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
             {/* MAIN LAYOUT SPLIT GRID */}
             <div className="dashboard-content">
               
               {/* LEFT WIDGET: ACCOUNT PROFILE CARD */}
-              <div className="dashboard-card profile-card">
+              <motion.div variants={itemVariants} className="dashboard-card profile-card">
                 <h3>My Spiritual Profile</h3>
                 <div className="profile-info">
                   <p><strong>Name:</strong> {user.name}</p>
@@ -271,10 +329,10 @@ export default function UserDashboard() {
                 <button onClick={handleLogout} className="logout-button">
                   Disconnect Session
                 </button>
-              </div>
+              </motion.div>
 
               {/* RIGHT WIDGET: OFFERING LOGS & TIMELINE ROW */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', minWidth: '0', width: '100%' }}>
+              <motion.div variants={itemVariants} style={{ display: 'flex', flexDirection: 'column', gap: '30px', minWidth: '0', width: '100%' }}>
                 
                 {/* Dynamic Donation History Grid */}
                 <div className="dashboard-card">
@@ -370,14 +428,21 @@ export default function UserDashboard() {
                   </div>
                 </div>
 
-              </div>
+              </motion.div>
             </div>
-          </>
+          </motion.div>
         )}
 
         {/* --- TAB 2: SETTINGS --- */}
         {activeTab === 'settings' && (
-          <div className="dashboard-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
+          // <div  style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <motion.div 
+            variants={containerVariants} 
+            initial="hidden" 
+            animate="show"
+            className="dashboard-card"
+            style={{ maxWidth: '600px', margin: '0 auto' }}
+          >
             <h3>Account Settings</h3>
             
             {statusMsg && (
@@ -387,21 +452,35 @@ export default function UserDashboard() {
             )}
 
             {/* Form 1: Update Details */}
-            <form onSubmit={handleUpdateProfile} style={{ marginBottom: '40px', paddingBottom: '30px', borderBottom: '1px solid #333' }}>
-              <h4 style={{ color: '#ccc', marginBottom: '15px' }}>Update Profile</h4>
-              <div className="input-group">
-                <label>Display Name</label>
-                <input type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} required />
-              </div>
-              <div className="input-group">
-                <label>Email Address</label>
-                <input type="email" value={user.email} disabled style={{ backgroundColor: '#1a1a1a', cursor: 'not-allowed', color: '#888' }} />
-                <small style={{ color: '#888' }}>Emails cannot be changed as they act as your unique login ID.</small>
-              </div>
-              <button type="submit" className="cta-button">Save Details</button>
-            </form>
-
+            <motion.div variants={itemVariants} 
+                transition={{
+                  duration:1.5,
+                  ease:"easeInOut",
+                  damping: 15
+                }}
+             >
+              <form onSubmit={handleUpdateProfile} style={{ marginBottom: '40px', paddingBottom: '30px', borderBottom: '1px solid #333' }}>
+                <h4 style={{ color: '#ccc', marginBottom: '15px' }}>Update Profile</h4>
+                <div className="input-group">
+                  <label>Display Name</label>
+                  <input type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} required />
+                </div>
+                <div className="input-group">
+                  <label>Email Address</label>
+                  <input type="email" value={user.email} disabled style={{ backgroundColor: '#1a1a1a', cursor: 'not-allowed', color: '#888' }} />
+                  <small style={{ color: '#888' }}>Emails cannot be changed as they act as your unique login ID.</small>
+                </div>
+                <button type="submit" className="cta-button">Save Details</button>
+              </form>
+            </motion.div>
             {/* Form 2: Change Password */}
+            <motion.div variants={itemVariants} 
+                transition={{
+                  duration:1.5,
+                  ease:"easeInOut",
+                  damping: 15
+                }}
+             >
             <form onSubmit={handleUpdatePassword}>
               <h4 style={{ color: '#ccc', marginBottom: '15px' }}>Change Password</h4>
               <div className="input-group">
@@ -418,13 +497,20 @@ export default function UserDashboard() {
               </div>
               <button type="submit" className="cta-button outline-btn" style={{ borderColor: '#ff4757', color: '#ff4757' }}>Update Password</button>
             </form>
+            </motion.div>
 
-          </div>
+          </motion.div>
         )}
 
         {/* MY PUJAS TAB */}
         {activeTab === 'pujas' && (
-          <div className="dashboard-card" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          <motion.div 
+            variants={containerVariants} 
+            initial="hidden" 
+            animate="show"
+            className="dashboard-card"
+            style={{ maxWidth: '1000px', margin: '0 auto' }}
+          >
             <h3>My Booked Pujas</h3>
             <p style={{ color: '#ccc', marginBottom: '20px' }}>
               Track the upcoming schedules for your sponsored Nitya Seva and special Pujas.
@@ -499,7 +585,7 @@ export default function UserDashboard() {
                 </button>
               </div>
             )}
-          </div>
+          </motion.div>
         )}
 
       </div>
