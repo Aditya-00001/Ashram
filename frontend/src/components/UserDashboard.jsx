@@ -208,7 +208,11 @@ export default function UserDashboard() {
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.15 // This creates the cascade effect!
+        staggerChildren: 0.15,
+        stiffness: 280,
+        duration:1.5,
+        ease:"easeInOut",
+        damping: 24
       }
     }
   };
@@ -218,7 +222,13 @@ export default function UserDashboard() {
     show: { 
       opacity: 1, 
       y: 0, 
-      transition: { type: "spring", stiffness: 300, damping: 24 } 
+      transition: { 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 24,
+        duration:1.5,
+        ease:"easeInOut" 
+      } 
     }
   };
 
@@ -256,29 +266,14 @@ export default function UserDashboard() {
             variants={containerVariants} 
             initial="hidden" 
             animate="show"
-            transition={{
-              duration:1.5,
-              ease:"easeInOut",
-              damping: 15
-            }}
           >
             {/* 📊 TOP STATS HIGHLIGHT WIDGETS */}
             <motion.div variants={itemVariants} 
             className="dashboard-stats-grid"
-            transition={{
-              duration:3,
-              ease:"easeInOut",
-              damping: 15
-            }}
             >
               {/* <div className="stat-widget"> */}
               <motion.div variants={itemVariants} 
                 className="stat-widget"
-                transition={{
-                  duration:3,
-                  ease:"easeInOut",
-                  damping: 15
-                }}
              >
                 <div className="stat-label">Total Seva Offerings</div>
                 <div className="stat-value" style={{ color: 'var(--color-saffron)' }}>
@@ -290,22 +285,12 @@ export default function UserDashboard() {
               </motion.div>
               <motion.div variants={itemVariants} 
                 className="stat-widget"
-                transition={{
-                  duration:3,
-                  ease:"easeInOut",
-                  damping: 15
-                }}
              >
                 <div className="stat-label">Booked Pujas</div>
                 <div className="stat-value">{myPujas.length}</div>
               </motion.div>
               <motion.div variants={itemVariants} 
                 className="stat-widget"
-                transition={{
-                  duration:3,
-                  ease:"easeInOut",
-                  damping: 15
-                }}
              >
                 <div className="stat-label">Active Role</div>
                 <div className="stat-value" style={{ textTransform: 'capitalize', fontSize: '1.2rem' }}>
@@ -452,12 +437,7 @@ export default function UserDashboard() {
             )}
 
             {/* Form 1: Update Details */}
-            <motion.div variants={itemVariants} 
-                transition={{
-                  duration:1.5,
-                  ease:"easeInOut",
-                  damping: 15
-                }}
+            <motion.div variants={itemVariants}
              >
               <form onSubmit={handleUpdateProfile} style={{ marginBottom: '40px', paddingBottom: '30px', borderBottom: '1px solid #333' }}>
                 <h4 style={{ color: '#ccc', marginBottom: '15px' }}>Update Profile</h4>
@@ -475,11 +455,6 @@ export default function UserDashboard() {
             </motion.div>
             {/* Form 2: Change Password */}
             <motion.div variants={itemVariants} 
-                transition={{
-                  duration:1.5,
-                  ease:"easeInOut",
-                  damping: 15
-                }}
              >
             <form onSubmit={handleUpdatePassword}>
               <h4 style={{ color: '#ccc', marginBottom: '15px' }}>Change Password</h4>

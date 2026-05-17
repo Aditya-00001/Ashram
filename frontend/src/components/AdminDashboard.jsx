@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { ToastContext } from '../context/ToastContext';
+import { motion } from 'framer-motion';
 // 📊 IMPORT RECHARTS RESPONSIVE CONTAINERS
 import { 
   ResponsiveContainer, 
@@ -55,7 +56,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('analytics');
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
 
   // --- MOCK ANALYTICS DATA PIPELINE ---
   // Connect this to your real backend collection aggregations when ready
@@ -644,6 +645,36 @@ export default function AdminDashboard() {
       )}
     </div>
   );
+  
+  // --- FRAMER MOTION ANIMATION VARIANTS ---
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        stiffness: 280,
+        duration:1.5,
+        ease:"easeInOut",
+        damping: 24
+      }
+    }
+  };
+
+  // const itemVariants = {
+  //   hidden: { opacity: 0, y: 25 },
+  //   show: { 
+  //     opacity: 1, 
+  //     y: 0, 
+  //     transition: { 
+  //       type: "spring", 
+  //       stiffness: 300, 
+  //       damping: 24,
+  //       duration:1.5,
+  //       ease:"easeInOut" 
+  //     } 
+  //   }
+  // };
 
   return (
     <div className="admin-layout">
@@ -716,8 +747,14 @@ export default function AdminDashboard() {
             ) : (
               <>
                 {/* 📊 TOP ANALYTICS METRIC CARDS */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-                  
+                {/* <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '40px' }}> */}
+                <motion.div 
+                  variants={containerVariants} 
+                  initial="hidden" 
+                  animate="show"
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '40px' }}
+                >
+                 
                   <div style={{ backgroundColor: 'var(--bg-surface)', padding: '24px', borderRadius: 'var(--radius-card)', borderLeft: '4px solid #2ecc71', borderTop: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', boxShadow: 'var(--shadow-subtle)', transition: 'var(--transition-smooth)' }}>
                     <h4 style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '0.8rem', fontWeight: '700', letterSpacing: '0.5px', margin: '0 0 10px 0' }}>Total Donations</h4>
                     <h2 style={{ color: '#2ecc71', margin: 0, fontSize: '1.8rem', fontWeight: '700' }}>₹{analyticsData.totalDonations.toLocaleString('en-IN')}</h2>
@@ -745,11 +782,15 @@ export default function AdminDashboard() {
                     <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>Scheduled actions</small>
                   </div>
 
-                </div>
+                </motion.div> 
 
                 {/* 📈 RECHARTS DATA VISUALIZATION CONTAINER MATRICES */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 450px), 1fr))', gap: '30px', marginTop: '30px' }}>
-                  
+                <motion.div 
+                  variants={containerVariants} 
+                  initial="hidden" 
+                  animate="show"
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 450px), 1fr))', gap: '30px', marginTop: '30px' }}
+                >  
                   {/* Chart 1: Line Collection Graph */}
                   <div style={{ backgroundColor: 'var(--bg-surface)', padding: '25px', borderRadius: 'var(--radius-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-subtle)' }}>
                     <h4 style={{ margin: '0 0 20px 0', color: 'var(--text-main)', fontFamily: 'var(--font-headings)', fontSize: '1.2rem' }}>Financial & Seva Offering Trends</h4>
@@ -822,7 +863,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                </div>
+                </motion.div>
               </>
             )}
           </div>
