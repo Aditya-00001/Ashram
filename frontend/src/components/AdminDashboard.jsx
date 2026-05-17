@@ -1,6 +1,21 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { ToastContext } from '../context/ToastContext';
+// 📊 IMPORT RECHARTS RESPONSIVE CONTAINERS
+import { 
+  ResponsiveContainer, 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  PieChart, 
+  Pie, 
+  Cell 
+} from 'recharts';
 import '../styles/Admin.css';
 
 // --- TIME FORMATTING HELPERS ---
@@ -36,9 +51,30 @@ const parseDateToISO = (dateStr) => {
 
 export default function AdminDashboard() {
   const { user, logout } = useContext(AuthContext);
+  const { addToast } = useContext(ToastContext);
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('analytics');
+  const [loading, setLoading] = useState(true);
+
+  // --- MOCK ANALYTICS DATA PIPELINE ---
+  // Connect this to your real backend collection aggregations when ready
+  const trendData = [
+    { month: 'Jan', Donations: 45000, Pujas: 12 },
+    { month: 'Feb', Donations: 52000, Pujas: 19 },
+    { month: 'Mar', Donations: 85000, Pujas: 32 }, // Peak during Maha Shivratri
+    { month: 'Apr', Donations: 61000, Pujas: 22 },
+    { month: 'May', Donations: 95000, Pujas: 41 },
+  ];
+
+  const distributionData = [
+    { name: 'Successful offerings', value: 78 },
+    { name: 'Pending Payments', value: 15 },
+    { name: 'Failed Tries', value: 7 },
+  ];
+
+  // Saffron gold accent arrays matching design system tokens
+  const PIE_COLORS = ['#e67e22', '#f1c40f', '#e74c3c'];
   
   const [events, setEvents] = useState([]);
   const [donations, setDonations] = useState([]);
@@ -359,7 +395,7 @@ export default function AdminDashboard() {
         setUsersList(usersList.map(u => u._id === userId ? updatedUser : u));
       } else {
         const errorData = await res.json();
-        alert(errorData.message || "Failed to update role");
+        addToast(errorData.message || "Failed to update role", "error");
       }
     } catch (err) {
       console.error("Error updating role:", err);
@@ -427,7 +463,7 @@ export default function AdminDashboard() {
       } else {
         // --- ADD THIS TO CATCH THE EMAIL ERROR ---
         const errorData = await res.json();
-        alert(errorData.message); 
+        addToast(errorData.message, "error"); 
       }
     } catch (err) {
       console.error("Failed to save puja:", err);
@@ -459,7 +495,7 @@ export default function AdminDashboard() {
 
   const handleGalleryUpload = async (e) => {
     e.preventDefault();
-    if (galleryFormData.images.length === 0) return alert("Please select at least one image!");
+    if (galleryFormData.images.length === 0) return addToast("Please select at least one image!", "error");
     
     setIsUploading(true);
     const formData = new FormData();
@@ -575,7 +611,12 @@ export default function AdminDashboard() {
             if (activeTab === 'messages') setMessagePage(1);
           }
         }}
-        style={{ flex: 1, padding: '10px', backgroundColor: '#1a1a1a', color: '#fff', border: '1px solid #444', borderRadius: '4px' }}
+        style={{ flex: 1,
+            padding: '10px',
+            backgroundColor: 'var(--bg-primary)',
+            color: 'var(--text-main)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '4px' }}
       />
       <button 
         onClick={() => {
@@ -661,43 +702,128 @@ export default function AdminDashboard() {
         {/* ANALYTICS TAB */}
         {activeTab === 'analytics' && (
           <div className="admin-panel">
-            <h3 style={{ marginBottom: '20px' }}>Ashram Overview</h3>
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-headings)', color: 'var(--text-main)' }}>Ashram Executive Overview</h3>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '600' }}>
+                Operational State: <span style={{ color: 'var(--color-saffron)' }}>Real-Time Synchronization</span>
+              </div>
+            </div>
             
             {isLoadingAnalytics || !analyticsData ? (
-              <p style={{ color: '#888' }}>Calculating statistics...</p>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-                
-                {/* Financial Cards */}
-                <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #2ecc71', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
-                  <h4 style={{ color: '#888', textTransform: 'uppercase', fontSize: '0.85rem', margin: '0 0 10px 0' }}>Total Donations</h4>
-                  <h2 style={{ color: '#2ecc71', margin: 0, fontSize: '2rem' }}>₹{analyticsData.totalDonations.toLocaleString('en-IN')}</h2>
-                </div>
-
-                <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #3498db', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
-                  <h4 style={{ color: '#888', textTransform: 'uppercase', fontSize: '0.85rem', margin: '0 0 10px 0' }}>Collected This Month</h4>
-                  <h2 style={{ color: '#3498db', margin: 0, fontSize: '2rem' }}>₹{analyticsData.monthlyCollection.toLocaleString('en-IN')}</h2>
-                </div>
-
-                <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #f1c40f', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
-                  <h4 style={{ color: '#888', textTransform: 'uppercase', fontSize: '0.85rem', margin: '0 0 10px 0' }}>Pending Payments</h4>
-                  <h2 style={{ color: '#f1c40f', margin: 0, fontSize: '2rem' }}>₹{analyticsData.pendingAmount.toLocaleString('en-IN')}</h2>
-                  <small style={{ color: '#888' }}>{analyticsData.pendingCount} unverified transactions</small>
-                </div>
-
-                {/* Community Cards */}
-                <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #9b59b6', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
-                  <h4 style={{ color: '#888', textTransform: 'uppercase', fontSize: '0.85rem', margin: '0 0 10px 0' }}>Verified Members</h4>
-                  <h2 style={{ color: '#9b59b6', margin: 0, fontSize: '2rem' }}>{analyticsData.totalMembers.toLocaleString('en-IN')}</h2>
-                </div>
-
-                <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #e67e22', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>
-                  <h4 style={{ color: '#888', textTransform: 'uppercase', fontSize: '0.85rem', margin: '0 0 10px 0' }}>Upcoming Pujas</h4>
-                  <h2 style={{ color: '#e67e22', margin: 0, fontSize: '2rem' }}>{analyticsData.upcomingPujas}</h2>
-                  <small style={{ color: '#888' }}>Scheduled events</small>
-                </div>
-
+              <div style={{ padding: '40px 0', textTextAlignment: 'center' }}>
+                <p style={{ color: 'var(--color-saffron)' }}>Calculating platform statistics...</p>
               </div>
+            ) : (
+              <>
+                {/* 📊 TOP ANALYTICS METRIC CARDS */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '40px' }}>
+                  
+                  <div style={{ backgroundColor: 'var(--bg-surface)', padding: '24px', borderRadius: 'var(--radius-card)', borderLeft: '4px solid #2ecc71', borderTop: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', boxShadow: 'var(--shadow-subtle)', transition: 'var(--transition-smooth)' }}>
+                    <h4 style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '0.8rem', fontWeight: '700', letterSpacing: '0.5px', margin: '0 0 10px 0' }}>Total Donations</h4>
+                    <h2 style={{ color: '#2ecc71', margin: 0, fontSize: '1.8rem', fontWeight: '700' }}>₹{analyticsData.totalDonations.toLocaleString('en-IN')}</h2>
+                  </div>
+
+                  <div style={{ backgroundColor: 'var(--bg-surface)', padding: '24px', borderRadius: 'var(--radius-card)', borderLeft: '4px solid #3498db', borderTop: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', boxShadow: 'var(--shadow-subtle)', transition: 'var(--transition-smooth)' }}>
+                    <h4 style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '0.8rem', fontWeight: '700', letterSpacing: '0.5px', margin: '0 0 10px 0' }}>Collected This Month</h4>
+                    <h2 style={{ color: '#3498db', margin: 0, fontSize: '1.8rem', fontWeight: '700' }}>₹{analyticsData.monthlyCollection.toLocaleString('en-IN')}</h2>
+                  </div>
+
+                  <div style={{ backgroundColor: 'var(--bg-surface)', padding: '24px', borderRadius: 'var(--radius-card)', borderLeft: '4px solid #f1c40f', borderTop: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', boxShadow: 'var(--shadow-subtle)', transition: 'var(--transition-smooth)' }}>
+                    <h4 style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '0.8rem', fontWeight: '700', letterSpacing: '0.5px', margin: '0 0 10px 0' }}>Pending Transactions</h4>
+                    <h2 style={{ color: '#f1c40f', margin: 0, fontSize: '1.8rem', fontWeight: '700' }}>₹{analyticsData.pendingAmount.toLocaleString('en-IN')}</h2>
+                    <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>{analyticsData.pendingCount} unverified records</small>
+                  </div>
+
+                  <div style={{ backgroundColor: 'var(--bg-surface)', padding: '24px', borderRadius: 'var(--radius-card)', borderLeft: '4px solid #9b59b6', borderTop: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', boxShadow: 'var(--shadow-subtle)', transition: 'var(--transition-smooth)' }}>
+                    <h4 style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '0.8rem', fontWeight: '700', letterSpacing: '0.5px', margin: '0 0 10px 0' }}>Verified Members</h4>
+                    <h2 style={{ color: '#9b59b6', margin: 0, fontSize: '1.8rem', fontWeight: '700' }}>{analyticsData.totalMembers.toLocaleString('en-IN')}</h2>
+                  </div>
+
+                  <div style={{ backgroundColor: 'var(--bg-surface)', padding: '24px', borderRadius: 'var(--radius-card)', borderLeft: '4px solid var(--color-saffron)', borderTop: '1px solid var(--border-color)', borderRight: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)', boxShadow: 'var(--shadow-subtle)', transition: 'var(--transition-smooth)' }}>
+                    <h4 style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '0.8rem', fontWeight: '700', letterSpacing: '0.5px', margin: '0 0 10px 0' }}>Upcoming Pujas</h4>
+                    <h2 style={{ color: 'var(--color-saffron)', margin: 0, fontSize: '1.8rem', fontWeight: '700' }}>{analyticsData.upcomingPujas}</h2>
+                    <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>Scheduled actions</small>
+                  </div>
+
+                </div>
+
+                {/* 📈 RECHARTS DATA VISUALIZATION CONTAINER MATRICES */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 450px), 1fr))', gap: '30px', marginTop: '30px' }}>
+                  
+                  {/* Chart 1: Line Collection Graph */}
+                  <div style={{ backgroundColor: 'var(--bg-surface)', padding: '25px', borderRadius: 'var(--radius-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-subtle)' }}>
+                    <h4 style={{ margin: '0 0 20px 0', color: 'var(--text-main)', fontFamily: 'var(--font-headings)', fontSize: '1.2rem' }}>Financial & Seva Offering Trends</h4>
+                    <div style={{ width: '100%', height: 300 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={trendData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                          <XAxis dataKey="month" stroke="var(--text-muted)" tick={{ fontSize: 11, fontWeight: '600' }} />
+                          <YAxis stroke="var(--text-muted)" tick={{ fontSize: 11, fontWeight: '600' }} />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'var(--bg-surface)', 
+                              borderColor: 'var(--border-color)', 
+                              borderRadius: '8px', 
+                              color: 'var(--text-main)',
+                              fontSize: '0.9rem'
+                            }} 
+                          />
+                          <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '0.85rem' }} />
+                          <Line type="monotone" dataKey="Donations" stroke="var(--color-saffron)" strokeWidth={3} activeDot={{ r: 8 }} name="Seva Collections (₹)" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Chart 2: Pie Distribution Graph */}
+                  <div style={{ backgroundColor: 'var(--bg-surface)', padding: '25px', borderRadius: 'var(--radius-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-subtle)' }}>
+                    <h4 style={{ margin: '0 0 20px 0', color: 'var(--text-main)', fontFamily: 'var(--font-headings)', fontSize: '1.2rem' }}>Offering Verification Flow Distributions</h4>
+                    <div style={{ width: '100%', height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: '20px' }}>
+                      <div style={{ width: '180px', height: '100%' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={distributionData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={75}
+                              paddingAngle={4}
+                              dataKey="value"
+                            >
+                              {distributionData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'var(--bg-surface)', 
+                                borderColor: 'var(--border-color)', 
+                                borderRadius: '8px', 
+                                color: 'var(--text-main)',
+                                fontSize: '0.85rem'
+                              }} 
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      
+                      {/* Custom Inline Label Legend */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left' }}>
+                        {distributionData.map((entry, index) => (
+                          <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                            <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: PIE_COLORS[index] }} />
+                            <span style={{ color: 'var(--text-main)', fontWeight: '500' }}>{entry.name}</span>
+                            <span style={{ color: 'var(--text-muted)' }}>({entry.value}%)</span>
+                          </div>
+                        ))}
+                      </div>
+
+                    </div>
+                  </div>
+
+                </div>
+              </>
             )}
           </div>
         )}

@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { ToastContext } from '../context/ToastContext';
 import '../styles/Support.css'; // Assuming you have a CSS file for this
 
 // Utility to load the Razorpay script dynamically
@@ -16,6 +17,7 @@ const loadScript = (src) => {
 
 export default function Support() {
   const { user } = useContext(AuthContext);
+  const { addToast } = useContext(ToastContext);
   const navigate = useNavigate();
   const [amount, setAmount] = useState(501); // Default offering
   const [purpose, setPurpose] = useState('General Seva');
@@ -26,7 +28,7 @@ export default function Support() {
 
     // 1. Ensure user is logged in
     if (!user) {
-      alert("Please log in or register to make a donation.");
+      addToast("Please log in or register to make a donation.", "error");
       navigate('/login');
       return;
     }
@@ -36,7 +38,7 @@ export default function Support() {
     // 2. Load the Razorpay SDK
     const res = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
     if (!res) {
-      alert("Razorpay SDK failed to load. Are you online?");
+      addToast("Razorpay SDK failed to load. Are you online?", "error");
       setIsProcessing(false);
       return;
     }
@@ -53,7 +55,7 @@ export default function Support() {
       }).then(t => t.json());
 
       if (!orderData.success) {
-        alert("Server error. Please try again.");
+        addToast("Server error. Please try again.", "error");
         setIsProcessing(false);
         return;
       }
@@ -88,10 +90,10 @@ export default function Support() {
           }).then(t => t.json());
 
           if (verifyRes.success) {
-            alert(`Hari Om! Payment successful. Payment ID: ${response.razorpay_payment_id}`);
+            addToast(`Hari Om! Payment successful. Payment ID: ${response.razorpay_payment_id}`, "success");
             navigate('/my-profile'); // Send them to see their updated Seva history!
           } else {
-            alert("Payment verification failed.");
+            addToast("Payment verification failed.", "error");
           }
         },
         prefill: {
@@ -109,7 +111,7 @@ export default function Support() {
 
     } catch (error) {
       console.error(error);
-      alert("Something went wrong during checkout.");
+      addToast("Something went wrong during checkout.", "error");
     }
 
     setIsProcessing(false);

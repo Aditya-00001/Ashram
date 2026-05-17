@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-
+import React, { useState, useContext } from 'react';
+import { ToastContext } from '../context/ToastContext';
 export default function CreatePollModal({ onSubmit, onClose }) {
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState(['', '']); // Start with 2 empty options
-
+  const { addToast } = useContext(ToastContext);
   const handleAddOption = () => {
-    if (options.length >= 6) return alert("Maximum 6 options allowed.");
+    if (options.length >= 6) return addToast("Maximum 6 options allowed.", "error");
     setOptions([...options, '']);
   };
 
@@ -16,15 +16,15 @@ export default function CreatePollModal({ onSubmit, onClose }) {
   };
 
   const handleRemoveOption = (index) => {
-    if (options.length <= 2) return alert("A poll must have at least 2 options.");
+    if (options.length <= 2) return addToast("A poll must have at least 2 options.", "error");
     const newOptions = options.filter((_, i) => i !== index);
     setOptions(newOptions);
   };
 
   const handleSubmit = () => {
-    if (!question.trim()) return alert("Please enter a question.");
+    if (!question.trim()) return addToast("Please enter a question.", "error");
     const validOptions = options.filter(opt => opt.trim() !== '');
-    if (validOptions.length < 2) return alert("Please provide at least 2 valid options.");
+    if (validOptions.length < 2) return addToast("Please provide at least 2 valid options.", "error");
 
     // Package the data exactly how our backend Schema expects it
     onSubmit({

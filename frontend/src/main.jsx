@@ -4,7 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
-
+import { ToastProvider } from './context/ToastContext.jsx';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
@@ -15,8 +15,10 @@ if ('serviceWorker' in navigator) {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
-      <ThemeProvider> {/* <--- WRAP APPMANAGER */}
-        <App />
+      <ThemeProvider> 
+        <ToastProvider> 
+            <App />
+        </ToastProvider>
       </ThemeProvider>
     </AuthProvider>
   </StrictMode>,

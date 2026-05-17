@@ -1,9 +1,10 @@
-import React, { useRef, useState, useEffect } from 'react';
-
+import React, { useRef, useState, useEffect, useContext } from 'react';
+import { ToastContext } from '../context/ToastContext'
 export default function CameraCapture({ onCapture, onClose }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [stream, setStream] = useState(null);
+  const { addToast } = useContext(ToastContext);
 
   // Turn on the camera when the component mounts
   useEffect(() => {
@@ -22,7 +23,7 @@ export default function CameraCapture({ onCapture, onClose }) {
         }
       } catch (err) {
         console.error("Camera access denied:", err);
-        alert("Could not access camera. Please check your browser permissions.");
+        addToast("Could not access camera. Please check your browser permissions.", "error");
         onClose();
       }
     };
