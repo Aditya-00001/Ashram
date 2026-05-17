@@ -47,6 +47,7 @@ import pujaRoutes from './routes/pujaRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import faqRoutes from './routes/faqRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 import morgan from 'morgan';
 import logger from './utils/logger.js';
@@ -130,6 +131,7 @@ app.use('/api/pujas', pujaRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/faqs', faqRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/notifications', notificationRoutes);
 // --- BASE ROUTE (Health Check) ---
 app.get('/', (req, res) => {
   res.send('🙏 Achyuta Ananta Ashram API is running smoothly...');

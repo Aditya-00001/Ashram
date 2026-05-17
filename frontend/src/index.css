@@ -92,3 +92,148 @@ h1, h2, h3, h4, h5, h6 {
     background-color: var(--bg-sidebar);
   }
 }
+
+/* =======================================================
+   🔔 NOTIFICATION BELL UI
+   ======================================================= */
+.notif-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notif-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: transform 0.2s ease;
+  padding: 0 10px;
+}
+
+.notif-btn:hover {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.notif-badge {
+  position: absolute;
+  top: -2px;
+  right: 5px;
+  background-color: var(--color-error);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 20px;
+  border: 2px solid var(--bg-sidebar);
+}
+
+.notif-dropdown {
+  position: absolute;
+  top: 50px;
+  right: -50px;
+  width: 320px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1001;
+  transform-origin: top right;
+  animation: scaleFadeIn 0.2s ease-out forwards;
+}
+
+.notif-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-color);
+  font-family: var(--font-headings);
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mark-read-btn {
+  font-size: 0.8rem;
+  color: var(--color-saffron);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.notif-item {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.notif-item:hover {
+  background-color: var(--bg-sidebar);
+}
+
+.notif-item.unread {
+  background-color: rgba(230, 126, 34, 0.05);
+  border-left: 3px solid var(--color-saffron);
+}
+
+.notif-time {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 5px;
+}
+
+@keyframes scaleFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* =======================================================
+   💬 CHAT TYPING INDICATOR (ANIMATED DOTS)
+   ======================================================= */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 18px;
+  background-color: var(--color-bubble-theirs);
+  border-radius: var(--radius-bubble);
+  border-bottom-left-radius: 0;
+  width: fit-content;
+  border: 1px solid var(--border-color);
+  margin-bottom: 10px;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--text-muted);
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+/* Enhancing the Online Dot to pulse */
+.online-status-dot {
+  animation: onlinePulse 2s infinite;
+}
+
+@keyframes onlinePulse {
+  0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(46, 204, 113, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+}

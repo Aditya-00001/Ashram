@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext,useEffect } from 'react';
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
 import Home from './home.jsx';
 import About from './about.jsx';
@@ -27,6 +27,10 @@ export default function Nav() {
   const { theme, toggleTheme } = useContext(ThemeContext);
   const { user, logout } = useContext(AuthContext); 
   const navigate = useNavigate();
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(2);
+  // 1. Add these states right under your existing context hooks
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -40,6 +44,38 @@ export default function Nav() {
     logout();
     closeMenu();
     navigate('/login');
+  };
+
+  // 2. Add the fetch effect to grab notifications when the user logs in
+  useEffect(() => {
+    if (user) {
+      fetch(`${import.meta.env.VITE_API_URL}/api/notifications`, {
+        headers: { Authorization: `Bearer ${user.token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        // Assuming your backend returns an array of notification objects
+        if (Array.isArray(data)) {
+          setNotifications(data);
+          setUnreadCount(data.filter(n => !n.isRead).length);
+        }
+      })
+      .catch(err => console.error("Notification fetch error:", err));
+    }
+  }, [user]);
+
+  // 3. Add the function to mark them as read
+  const handleMarkAllRead = async () => {
+    try {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/notifications/read-all`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
+      setUnreadCount(0);
+      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+    } catch (err) {
+      console.error("Failed to mark notifications as read", err);
+    }
   };
 
   return (
@@ -70,6 +106,45 @@ export default function Nav() {
         >
           {theme === 'light' ? '🌙' : '☀️'}
         </button>
+        {/* 🔔 NEW: NOTIFICATION BELL WIDGET */}
+        {user && (
+          <div className="notif-wrapper">
+            <button 
+              className="notif-btn" 
+              onClick={() => setIsNotifOpen(!isNotifOpen)}
+            >
+              🔔
+              {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
+            </button>
+
+            {isNotifOpen && (
+            <div className="notif-dropdown">
+              <div className="notif-header">
+                <span>Notifications</span>
+                <button className="mark-read-btn" onClick={handleMarkAllRead}>Mark all read</button>
+              </div>
+              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                
+                {notifications.length === 0 ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    No new notifications.
+                  </div>
+                ) : (
+                  notifications.map(notif => (
+                    <div key={notif._id} className={`notif-item ${!notif.isRead ? 'unread' : ''}`}>
+                      <span style={{ color: 'var(--text-main)', fontSize: '0.9rem', display: 'block' }}>
+                        <strong>{notif.title}:</strong> {notif.message}
+                      </span>
+                      <span className="notif-time">{new Date(notif.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  ))
+                )}
+
+              </div>
+            </div>
+          )}
+          </div>
+        )}
       </div>
 
       {/* --- DESKTOP PRIMARY LINKS --- */}

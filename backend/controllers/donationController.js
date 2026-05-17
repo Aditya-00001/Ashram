@@ -1,4 +1,5 @@
 import Donation from '../models/Donation.js';
+import Notification from '../models/Notification.js';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
@@ -70,14 +71,23 @@ export const verifyRazorpayPayment = async (req, res) => {
     const isAuthentic = expectedSignature === razorpay_signature;
 
     if (isAuthentic) {
-      // 3. Update the database!
-      await Donation.findByIdAndUpdate(donationId, {
+      // 3. Update the database and capture the updated document using { new: true }!
+      const updatedDonation = await Donation.findByIdAndUpdate(donationId, {
         razorpayPaymentId: razorpay_payment_id,
         status: 'Successful'
-      }, { returnDocument: 'after' });
+      }, { new: true }); 
+
+      // 🔔 4. FIRE THE REAL-TIME NOTIFICATION
+      if (updatedDonation) {
+        await Notification.create({
+          user: updatedDonation.user,
+          title: 'Seva Received',
+          message: `Hari Om. Your offering of ₹${updatedDonation.amount} for "${updatedDonation.purpose}" was successful. Thank you for your support.`
+        });
+      }
 
       res.status(200).json({ success: true, message: "Payment verified successfully" });
-    } else {
+    }else {
       // If it fails, mark it as failed to track fraud attempts
       await Donation.findByIdAndUpdate(donationId, { status: 'Failed' });
       res.status(400).json({ success: false, message: "Invalid Signature" });
@@ -163,10 +173,21 @@ export const razorpayWebhook = async (req, res) => {
       // 3. Update the Database based on the event type
       if (event === 'payment.captured') {
         // Payment was successful! Find the matching donation and update it.
-        await Donation.findOneAndUpdate(
-          { razorpayOrderId: razorpayOrderId }, 
-          { status: 'Successful', paymentId: paymentEntity.id }
+        const updatedDonation = await Donation.findOneAndUpdate(
+          { razorpayOrderId: razorpayOrderId, status: 'Pending' }, // Only update if it's still pending to avoid duplicate notifications
+          { status: 'Successful', paymentId: paymentEntity.id },
+          { new: true }
         );
+        
+        // 🔔 Trigger Notification if the webhook caught it first
+        if (updatedDonation) {
+           await Notification.create({
+             user: updatedDonation.user,
+             title: 'Seva Received',
+             message: `Hari Om. Your offering of ₹${updatedDonation.amount} for "${updatedDonation.purpose}" was successful.`
+           });
+        }
+        
         console.log(`Webhook: Payment captured for Order ${razorpayOrderId}`);
         
       } else if (event === 'payment.failed') {

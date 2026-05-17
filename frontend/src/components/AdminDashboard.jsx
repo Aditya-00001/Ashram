@@ -58,21 +58,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('analytics');
   // const [loading, setLoading] = useState(true);
 
-  // --- MOCK ANALYTICS DATA PIPELINE ---
-  // Connect this to your real backend collection aggregations when ready
-  const trendData = [
-    { month: 'Jan', Donations: 45000, Pujas: 12 },
-    { month: 'Feb', Donations: 52000, Pujas: 19 },
-    { month: 'Mar', Donations: 85000, Pujas: 32 }, // Peak during Maha Shivratri
-    { month: 'Apr', Donations: 61000, Pujas: 22 },
-    { month: 'May', Donations: 95000, Pujas: 41 },
-  ];
-
-  const distributionData = [
-    { name: 'Successful offerings', value: 78 },
-    { name: 'Pending Payments', value: 15 },
-    { name: 'Failed Tries', value: 7 },
-  ];
+  ;
 
   // Saffron gold accent arrays matching design system tokens
   const PIE_COLORS = ['#e67e22', '#f1c40f', '#e74c3c'];
@@ -142,6 +128,18 @@ export default function AdminDashboard() {
   // const [activeTab, setActiveTab] = useState('analytics'); // this is default!
   const [analyticsData, setAnalyticsData] = useState(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+
+  // --- MOCK ANALYTICS DATA PIPELINE ---
+  // Connect this to your real backend collection aggregations when ready
+  const trendData = analyticsData?.trendData || [
+    { month: 'No Data', Donations: 0, Pujas: 0 }
+  ];
+
+  const distributionData = analyticsData?.distributionData || [
+    { name: 'Successful', value: analyticsData?.totalDonations ? 100 : 0 },
+    { name: 'Pending', value: analyticsData?.pendingCount ? 100 : 0 },
+    { name: 'Failed', value: 0 },
+  ];
 
   // --- NEW: FAQ State ---
   const [faqList, setFaqList] = useState([]);
