@@ -733,23 +733,34 @@ export default function Chat() {
 
   useEffect(() => {
     const checkVaultStatus = async () => {
-      const localKey = localStorage.getItem(`e2ee_priv_${user._id}`);
-      if (localKey) {
-        setVaultStatus('unlocked');
-        return;
-      }
-
       try {
+        // 1. Always check the backend first to see if a secure backup exists
         const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/escrow`, {
           headers: { 'Authorization': `Bearer ${user.token}` }
         });
+        
         if (res.ok) {
           const data = await res.json();
+          const localKey = localStorage.getItem(`e2ee_priv_${user._id}`);
+          
+          // CASE A: Cryptographic Escrow exists in the database
           if (data.escrowedPrivateKey && data.escrowedPrivateKey.length > 0) {
             setEscrowParams(data);
-            setVaultStatus('locked');
-          } else {
-            setVaultStatus('setup_required');
+            if (localKey) {
+              setVaultStatus('unlocked');
+            } else {
+              setVaultStatus('locked'); // Needs PIN to unlock on this device
+            }
+          } 
+          // CASE B: Escrow fields are completely missing from the database (Phase 6 legacy user)
+          else {
+            if (localKey) {
+              // User has keys locally but hasn't backed them up yet. Prompt for PIN to sync!
+              setVaultStatus('backup_required');
+            } else {
+              // Fresh new user with no history at all
+              setVaultStatus('setup_required');
+            }
           }
         }
       } catch (err) {
@@ -759,24 +770,35 @@ export default function Chat() {
     if (user) checkVaultStatus();
   }, [user]);
 
+  // === FIX: PRESERVE EXISTING CRYPTO KEYS DURING INITIAL ESCROW SYNC ===
   const handleInitializeVault = async (e) => {
     e.preventDefault();
     if (chatPin.length < 4) return setVaultError("PIN/Passphrase must be at least 4 characters.");
     if (chatPin !== confirmPin) return setVaultError("PIN entries do not match.");
 
     try {
-      // 1. Generate fresh unique E2EE Key Pair
-      const keyPair = await generateKeyPair();
-      const pubJWK = await exportPublicKey(keyPair.publicKey);
-      const privJWK = await exportPrivateKey(keyPair.privateKey);
+      let privJWK;
+      let pubJWK = null;
 
-      // 2. Wrap private key with the user's PIN
+      if (vaultStatus === 'backup_required') {
+        // ✅ CRITICAL FIX: Pull your existing key so we don't break your chat history!
+        privJWK = JSON.parse(localStorage.getItem(`e2ee_priv_${user._id}`));
+        console.log("Migrating existing chat history key container into vault backup...");
+      } else {
+        // True fresh user: safe to generate clean keys
+        const keyPair = await generateKeyPair();
+        pubJWK = await exportPublicKey(keyPair.publicKey);
+        privJWK = await exportPrivateKey(keyPair.privateKey);
+      }
+
+      // Wrap the target private key with the user's custom PIN entry
       const escrowPayload = await wrapPrivateKey(privJWK, chatPin);
       
-      // 3. Put public key in payload
-      escrowPayload.publicKey = pubJWK;
+      if (pubJWK) {
+        escrowPayload.publicKey = pubJWK;
+      }
 
-      // 4. Save to Database
+      // Save encrypted container attributes straight to MongoDB
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/escrow`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
@@ -789,6 +811,7 @@ export default function Chat() {
         setChatPin('');
         setConfirmPin('');
         setVaultError('');
+        if (addToast) addToast("Chat Vault initialized and safely backed up!", "success");
       }
     } catch (err) {
       console.error("Initialization failed", err);
@@ -1210,29 +1233,32 @@ export default function Chat() {
     );
   }
 
-  if (vaultStatus === 'locked' || vaultStatus === 'setup_required') {
+  // === FIX: INJECT ADAPTIVE MIGRATION UI LABELS ===
+  if (vaultStatus === 'locked' || vaultStatus === 'setup_required' || vaultStatus === 'backup_required') {
     return (
       <div className="chat-modal-overlay" style={{ zIndex: 6000, backgroundColor: '#0a0a0a' }}>
         <div className="chat-modal-content" style={{ maxWidth: '450px', padding: '35px', textAlign: 'center', borderRadius: '16px', borderTop: '4px solid #e67e22' }}>
           <h2 style={{ color: '#e67e22', marginBottom: '10px' }}>
-            {vaultStatus === 'setup_required' ? '🕉️ Set Your Chat Passphrase' : '🔒 Secure Chat Container Locked'}
+            {vaultStatus === 'setup_required' && '🕉️ Set Your Chat Passphrase'}
+            {vaultStatus === 'backup_required' && '🔒 Secure Your Chat History'}
+            {vaultStatus === 'locked' && '🔒 Secure Chat Container Locked'}
           </h2>
           <p style={{ color: '#888', fontSize: '0.9rem', marginBottom: '25px', lineHeight: '1.5' }}>
-            {vaultStatus === 'setup_required' 
-              ? 'Create a private PIN or Passphrase to secure your end-to-end encrypted conversations across all devices. The server never stores this secret.'
-              : 'Enter your custom Chat PIN or Passphrase to download and unwrap your end-to-end encryption keys.'}
+            {vaultStatus === 'setup_required' && 'Create a private PIN or Passphrase to secure your end-to-end encrypted conversations across all devices. The server never stores this secret.'}
+            {vaultStatus === 'backup_required' && 'We detected active encryption keys from a previous session stored locally. Create a custom PIN or Passphrase to safely back up this key history to your profile vault so you can unlock your messages on other devices.'}
+            {vaultStatus === 'locked' && 'Enter your custom Chat PIN or Passphrase to download and unwrap your end-to-end encryption keys.'}
           </p>
 
-          <form onSubmit={vaultStatus === 'setup_required' ? handleInitializeVault : handleUnlockVault}>
+          <form onSubmit={vaultStatus === 'locked' ? handleUnlockVault : handleInitializeVault}>
             <input 
               type="password"
-              placeholder={vaultStatus === 'setup_required' ? "Enter Secure PIN / Passphrase" : "Enter PIN to Unlock"}
+              placeholder={(vaultStatus === 'setup_required' || vaultStatus === 'backup_required') ? "Create Secure PIN / Passphrase" : "Enter PIN to Unlock"}
               value={chatPin}
               onChange={(e) => setChatPin(e.target.value)}
               style={{ width: '100%', padding: '12px', marginBottom: '15px', backgroundColor: '#111', color: '#fff', border: '1px solid #333', borderRadius: '8px', textAlign: 'center', fontSize: '1.1rem' }}
             />
 
-            {vaultStatus === 'setup_required' && (
+            {(vaultStatus === 'setup_required' || vaultStatus === 'backup_required') && (
               <input 
                 type="password"
                 placeholder="Confirm PIN / Passphrase"
@@ -1245,7 +1271,7 @@ export default function Chat() {
             {vaultError && <p style={{ color: '#ff4757', fontSize: '0.85rem', marginBottom: '15px' }}>{vaultError}</p>}
 
             <button type="submit" className="cta-button" style={{ width: '100%', padding: '12px', fontSize: '1rem', fontWeight: 'bold' }}>
-              {vaultStatus === 'setup_required' ? 'Initialize Keys & Vault' : 'Unlock Chat History'}
+              {vaultStatus === 'locked' ? 'Unlock Chat History' : 'Secure Existing History'}
             </button>
           </form>
         </div>
