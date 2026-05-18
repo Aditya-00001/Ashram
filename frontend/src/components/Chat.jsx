@@ -1693,29 +1693,6 @@ export default function Chat() {
               </div>
             )}
 
-            {/* =========================================
-                📞 INCOMING CALL MODAL (MOVED HERE!)
-               ========================================= */}
-            {receivingCall && !callAccepted && (
-              <div className="chat-modal-overlay" style={{ zIndex: 4000 }}>
-                <div className="chat-modal-content" style={{ textAlign: 'center', padding: '30px' }}>
-                  <div className="spiritual-loader-container small">
-                    <SpiritualLoader size="small" message="" />
-                  </div>
-                  <h2 style={{ color: '#e67e22', marginTop: '20px' }}>Incoming {callerInfo.callType} Call</h2>
-                  <p style={{ color: '#fff', fontSize: '1.2rem' }}>{callerInfo.name} is calling...</p>
-                  
-                  <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '30px' }}>
-                    <button className="cancel-btn" onClick={rejectCall} style={{ padding: '10px 30px' }}>
-                      Decline
-                    </button>
-                    <button className="cta-button" onClick={acceptCall} style={{ padding: '10px 30px', backgroundColor: '#2ecc71', border: 'none' }}>
-                      Accept
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* --- NEW: CAMERA MODAL --- */}
             {showCamera && (
@@ -1837,9 +1814,35 @@ export default function Chat() {
           </div>
         )}
       </div>
-        {/* =========================================
-            📞 ACTIVE CALL MODAL (MOVED HERE!)
+
+      {/* =========================================
+            📞 INCOMING CALL MODAL (MOVED OUTSIDE UNIVERSALLY)
           ========================================= */}
+      {receivingCall && !callAccepted && (
+        <div className="chat-modal-overlay" style={{ zIndex: 4000 }}>
+          <div className="chat-modal-content" style={{ textAlign: 'center', padding: '30px' }}>
+            <div className="spiritual-loader-container small">
+              <SpiritualLoader size="small" message="" />
+            </div>
+            <h2 style={{ color: '#e67e22', marginTop: '20px' }}>Incoming {callerInfo?.callType || 'Spiritual'} Call</h2>
+            <p style={{ color: '#fff', fontSize: '1.2rem' }}>{callerInfo?.name || 'A Community Member'} is calling...</p>
+            
+            <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '30px' }}>
+              <button className="cancel-btn" onClick={rejectCall} style={{ padding: '10px 30px' }}>
+                Decline
+              </button>
+              <button className="cta-button" onClick={acceptCall} style={{ padding: '10px 30px', backgroundColor: '#2ecc71', border: 'none' }}>
+                Accept
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    
+      {/* =========================================
+          📞 ACTIVE CALL MODAL (MOVED HERE!)
+        ========================================= */}
       {(calling || callAccepted) && (
         <div className="chat-modal-overlay" style={{ zIndex: 5000, backgroundColor: '#000' }}>
           <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
