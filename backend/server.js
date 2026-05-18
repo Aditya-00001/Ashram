@@ -173,6 +173,11 @@ io.on('connection', (socket) => {
     socket.to(data.to).emit('call_ended');
   });
 
+  socket.on('call_rejected', (data) => {
+    // Send the rejection reason back to the original caller
+    io.to(data.to).emit('call_rejected', { reason: data.reason });
+  });
+
 
   socket.on('user_online', (userId) => {
     socket.userId = userId; 

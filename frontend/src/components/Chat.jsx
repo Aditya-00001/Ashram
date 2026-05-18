@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { ToastContext } from '../context/ToastContext';
 import { 
   importPrivateKey, 
   importPublicKey, 
@@ -284,6 +285,15 @@ export default function Chat() {
   const [callType, setCallType] = useState(null); // 'audio' or 'video'
   const [callerInfo, setCallerInfo] = useState(null);
 
+  // <--- 2. ADD THESE LINES HERE --->
+  const { addToast } = useContext(ToastContext);
+  
+  // We use a ref here because Socket.io listeners need the absolute latest busy status without stale closures
+  const isInCallRef = useRef(false);
+  useEffect(() => {
+    isInCallRef.current = calling || receivingCall || callAccepted;
+  }, [calling, receivingCall, callAccepted]);
+
   const myVideoRef = useRef();
   const peerVideoRef = useRef();
   const connectionRef = useRef();
@@ -295,6 +305,35 @@ export default function Chat() {
   const [confirmPin, setConfirmPin] = useState('');
   const [escrowParams, setEscrowParams] = useState(null);
   const [vaultError, setVaultError] = useState('');
+
+  // <--- 3. ADD THIS HARDWARE CHECKER --->
+  const verifyMediaHardware = async (type) => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+        addToast("Your browser does not support video calling.", "error");
+        return false;
+      }
+      
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const hasCamera = devices.some(device => device.kind === 'videoinput');
+      const hasMic = devices.some(device => device.kind === 'audioinput');
+
+      if (type === 'video' && !hasCamera) {
+        addToast("No camera detected. Please plug in a webcam.", "error");
+        return false;
+      }
+      if (!hasMic) {
+        addToast("No microphone detected. They won't be able to hear you!", "info");
+      }
+      
+      return true; // Hardware looks good!
+    } catch (err) {
+      console.error("Hardware verification failed:", err);
+      addToast("Unable to verify camera/microphone permissions.", "error");
+      return false;
+    }
+  };
+  // <------------------------------------>
 
   // --- 1. INITIALIZE SOCKET & FETCH INBOX ---
   useEffect(() => {
@@ -381,9 +420,26 @@ export default function Chat() {
 
     // --- 📞 WebRTC INCOMING LISTENERS ---
     socketRef.current.on('incoming_call', (data) => {
+      if (isInCallRef.current) {
+        // 🚨 EDGE CASE: User is already busy! Tell the server to bounce the call.
+        socketRef.current.emit('call_rejected', { 
+          to: data.from, 
+          reason: "busy" 
+        });
+        return;
+      }
       setReceivingCall(true);
       setCallerInfo(data);
       setCallType(data.callType);
+    });
+
+    socketRef.current.on('call_rejected', (data) => {
+      if (data.reason === "busy") {
+        addToast("The user is currently on another call.", "info");
+      } else {
+        addToast("The user declined your call.", "error");
+      }
+      endCallLocally();
     });
 
     socketRef.current.on('ice_candidate', (candidate) => {
@@ -408,7 +464,7 @@ export default function Chat() {
     });
 
     return () => socketRef.current.disconnect(); 
-  }, [user]);
+  }, [user, addToast]);
 
   useEffect(() => {
   if (user) {
@@ -467,6 +523,9 @@ export default function Chat() {
   }
 
   const startCall = async (type) => {
+    const isHardwareReady = await verifyMediaHardware(type);
+    if (!isHardwareReady) return;
+
     setCallType(type);
     setCalling(true);
 
@@ -518,6 +577,14 @@ export default function Chat() {
     } catch (err) {
       console.error("Failed to start call", err);
       setCalling(false);
+      // <--- ADD PERMISSION GUARD --->
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        addToast("Microphone and Camera access was blocked by your browser.", "error");
+      } else if (err.name === 'NotFoundError') {
+        addToast("Requested camera/mic could not be found.", "error");
+      } else {
+        addToast("Failed to access media devices.", "error");
+      }
     }
   };
 
@@ -566,7 +633,7 @@ export default function Chat() {
   };
 
   const rejectCall = () => {
-    socketRef.current.emit('end_call', { to: callerInfo.from });
+    socketRef.current.emit('call_rejected', { to: callerInfo.from, reason: 'declined' });
     setReceivingCall(false);
     setCallerInfo(null);
   };
