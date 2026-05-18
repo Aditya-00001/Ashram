@@ -143,7 +143,7 @@ app.get('/', (req, res) => {
 //   console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 // });
 
-const onlineUsers = new Set();
+const userSocketMap = new Map();
 
 // --- NEW: Socket.io Connection Logic ---
 io.on('connection', (socket) => {
@@ -181,12 +181,13 @@ io.on('connection', (socket) => {
 
   socket.on('user_online', (userId) => {
     socket.userId = userId; 
-    onlineUsers.add(userId);
+    userSocketMap.set(socket.id, userId);
     
     // --- CRITICAL FIX: Join a room named after the User ID ---
     socket.join(userId); 
     
-    io.emit('online_users_list', Array.from(onlineUsers)); 
+    const uniqueOnlineUsers = Array.from(new Set(userSocketMap.values()));
+    io.emit('online_users_list', uniqueOnlineUsers);
     console.log(`👤 User ${userId} is now reachable for calls.`);
   });
 
@@ -220,8 +221,9 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log(`🔌 User disconnected: ${socket.id}`);
     if (socket.userId) {
-      onlineUsers.delete(socket.userId);
-      io.emit('online_users_list', Array.from(onlineUsers));
+      userSocketMap.delete(socket.id); 
+      const uniqueOnlineUsers = Array.from(new Set(userSocketMap.values()));
+      io.emit('online_users_list', uniqueOnlineUsers);
     }
   });
 

@@ -1539,7 +1539,7 @@ export default function Chat() {
             const chatName = convo.isGroup ? convo.groupName : participant?.name || 'Unknown';
             
             // Check if the other person is online
-            const isOnline = !convo.isGroup && onlineUsers.includes(participant?._id);
+            const isOnline = !convo.isGroup && onlineUsers.some(id => String(id) === String(participant?._id));
 
             return (
               <div key={convo._id} className={`conversation-item ...`} onClick={() => setActiveChat(convo)}>
@@ -1693,6 +1693,9 @@ export default function Chat() {
               </div>
             )}
 
+            {/* =========================================
+                📞 INCOMING CALL MODAL (MOVED HERE!)
+               ========================================= */}
             {receivingCall && !callAccepted && (
               <div className="chat-modal-overlay" style={{ zIndex: 4000 }}>
                 <div className="chat-modal-content" style={{ textAlign: 'center', padding: '30px' }}>
@@ -1703,18 +1706,10 @@ export default function Chat() {
                   <p style={{ color: '#fff', fontSize: '1.2rem' }}>{callerInfo.name} is calling...</p>
                   
                   <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '30px' }}>
-                    <button 
-                      className="cancel-btn" 
-                      onClick={rejectCall} // This already emits 'end_call' in your code
-                      style={{ padding: '10px 30px' }}
-                    >
+                    <button className="cancel-btn" onClick={rejectCall} style={{ padding: '10px 30px' }}>
                       Decline
                     </button>
-                    <button 
-                      className="cta-button" 
-                      onClick={acceptCall}
-                      style={{ padding: '10px 30px', backgroundColor: '#2ecc71', border: 'none' }}
-                    >
+                    <button className="cta-button" onClick={acceptCall} style={{ padding: '10px 30px', backgroundColor: '#2ecc71', border: 'none' }}>
                       Accept
                     </button>
                   </div>
@@ -1843,48 +1838,47 @@ export default function Chat() {
         )}
       </div>
         {/* =========================================
-              📞 ACTIVE CALL MODAL (FULL SCREEN)
-            ========================================= */}
-        {(calling || callAccepted) && (
-          <div className="chat-modal-overlay" style={{ zIndex: 5000, backgroundColor: '#000' }}>
-            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fff', marginBottom: '20px' }}>
-                <h3>{callType === 'video' ? 'Video Call' : 'Audio Call'} with {activeChat?.participants.find(p => p._id !== user._id)?.name || callerInfo?.name}</h3>
-                <button 
-                  onClick={() => {
-                    // Find the other person's ID to notify them
-                    const peerId = activeChat?.participants.find(p => p._id !== user._id)?._id || callerInfo?.from;
-                    endCallLocally(peerId);
-                  }} 
-                  style={{ backgroundColor: '#ff4757', border: 'none', color: 'white', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer' }}
-                >
-                  End Call
-                </button>
+            📞 ACTIVE CALL MODAL (MOVED HERE!)
+          ========================================= */}
+      {(calling || callAccepted) && (
+        <div className="chat-modal-overlay" style={{ zIndex: 5000, backgroundColor: '#000' }}>
+          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fff', marginBottom: '20px' }}>
+              <h3>{callType === 'video' ? 'Video Call' : 'Audio Call'} with {activeChat?.participants.find(p => p._id !== user._id)?.name || callerInfo?.name}</h3>
+              <button 
+                onClick={() => {
+                  const peerId = activeChat?.participants.find(p => p._id !== user._id)?._id || callerInfo?.from;
+                  endCallLocally(peerId);
+                }} 
+                style={{ backgroundColor: '#ff4757', border: 'none', color: 'white', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer' }}
+              >
+                End Call
+              </button>
+            </div>
+
+            <div style={{ flex: 1, display: 'flex', gap: '20px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+              {/* My Video */}
+              <div style={{ width: callType === 'video' ? '300px' : '150px', aspectRatio: '16/9', backgroundColor: '#222', borderRadius: '12px', overflow: 'hidden', border: '2px solid #e67e22', position: 'relative' }}>
+                <video playsInline muted ref={myVideoRef} autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <span style={{ position: 'absolute', bottom: '10px', left: '10px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: '4px' }}>You</span>
               </div>
 
-              <div style={{ flex: 1, display: 'flex', gap: '20px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
-                {/* My Video (Small Overlay) */}
-                <div style={{ width: callType === 'video' ? '300px' : '150px', aspectRatio: '16/9', backgroundColor: '#222', borderRadius: '12px', overflow: 'hidden', border: '2px solid #e67e22', position: 'relative' }}>
-                  <video playsInline muted ref={myVideoRef} autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <span style={{ position: 'absolute', bottom: '10px', left: '10px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: '4px' }}>You</span>
+              {/* Peer Video */}
+              {callAccepted ? (
+                <div style={{ width: callType === 'video' ? '600px' : '150px', aspectRatio: '16/9', backgroundColor: '#111', borderRadius: '12px', overflow: 'hidden', border: '2px solid #444', position: 'relative' }}>
+                  <video playsInline ref={peerVideoRef} autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <span style={{ position: 'absolute', bottom: '10px', left: '10px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: '4px' }}>{activeChat?.participants.find(p => p._id !== user._id)?.name || callerInfo?.name}</span>
                 </div>
-
-                {/* Peer Video (Large) */}
-                {callAccepted ? (
-                  <div style={{ width: callType === 'video' ? '600px' : '150px', aspectRatio: '16/9', backgroundColor: '#111', borderRadius: '12px', overflow: 'hidden', border: '2px solid #444', position: 'relative' }}>
-                    <video playsInline ref={peerVideoRef} autoPlay style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <span style={{ position: 'absolute', bottom: '10px', left: '10px', fontSize: '0.8rem', background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: '4px' }}>{activeChat?.participants.find(p => p._id !== user._id)?.name || callerInfo?.name}</span>
-                  </div>
-                ) : (
-                  <div style={{ color: '#888', textAlign: 'center' }}>
-                    <SpiritualLoader size="small" message="Waiting for response..." />
-                  </div>
-                )}
-              </div>
+              ) : (
+                <div style={{ color: '#888', textAlign: 'center' }}>
+                  <SpiritualLoader size="small" message="Waiting for response..." />
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
     </div>
   );
