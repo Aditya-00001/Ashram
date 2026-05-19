@@ -856,15 +856,30 @@ export default function Chat() {
     }
   };
 
+  // === FIX: FORCE PRIMITIVE ARRAY FORMATTING FOR PRODUCTION ENDPOINTS ===
   const handleUnlockVault = async (e) => {
     e.preventDefault();
     if (!chatPin) return;
 
     try {
+      // ✅ CRITICAL PRODUCTION FIX: Convert potential object models safely back into flat arrays
+      const formattedPrivateKey = Array.isArray(escrowParams.escrowedPrivateKey)
+        ? escrowParams.escrowedPrivateKey
+        : Object.values(escrowParams.escrowedPrivateKey);
+
+      const formattedSalt = Array.isArray(escrowParams.escrowSalt)
+        ? escrowParams.escrowSalt
+        : Object.values(escrowParams.escrowSalt);
+
+      const formattedIv = Array.isArray(escrowParams.escrowIv)
+        ? escrowParams.escrowIv
+        : Object.values(escrowParams.escrowIv);
+
+      // Now pass the standard primitive arrays down into the Web Crypto API
       const decryptedPrivKey = await unwrapPrivateKey(
-        escrowParams.escrowedPrivateKey,
-        escrowParams.escrowSalt,
-        escrowParams.escrowIv,
+        formattedPrivateKey,
+        formattedSalt,
+        formattedIv,
         chatPin
       );
 
@@ -873,11 +888,13 @@ export default function Chat() {
       setChatPin('');
       setVaultError('');
       
-      // Force reload active chat messages to decrypt immediately
+      if (addToast) addToast("Secure Vault Unlocked successfully!", "success");
+      
+      // Force reload active chat messages to decrypt immediately with the correct key
       window.location.reload();
     } catch (err) {
-      console.error("Decryption wrong PIN", err);
-      setVaultError("Incorrect Passphrase or PIN. Unable to unlock cryptographic key.");
+      console.error("Decryption failed with provided PIN:", err);
+      setVaultError("Incorrect Passphrase or PIN. Unable to unwrap cryptographic key.");
     }
   };
 
