@@ -55,8 +55,22 @@ const MessageBubble = ({ msg, activeChat, user, renderTextWithLinks, setSandboxF
             const myEnvelope = envelopesObj[myId];
             
             // 2. Derive the secret used to "lock" this specific envelope
-            const senderPubKey = await importPublicKey(msg.sender.publicKey);
+            // =====================================================================
+            // ✅ FIXED: STRING-SAFE GROUP SENDER LOOKUP INJECTED HERE
+            // =====================================================================
+            const senderId = typeof msg.sender === 'object' ? String(msg.sender._id) : String(msg.sender);
+            const groupSender = activeChat.participants.find(p => String(p._id) === senderId);
+            const targetGroupPubKeyJWK = groupSender?.publicKey || msg.sender?.publicKey;
+
+            if (!targetGroupPubKeyJWK) {
+              console.warn("Public key unavailable for group sender identity:", senderId);
+              setDisplayText("🔒 [Sender Key Unavailable]");
+              return;
+            }
+
+            const senderPubKey = await importPublicKey(targetGroupPubKeyJWK);
             const derivationSecret = await deriveSharedSecret(myPrivKey, senderPubKey);
+            // =====================================================================
             
             // 3. Unlock the envelope to get the raw Message Key
             const rawMessageKey = await decryptKeyBuffer(
@@ -73,11 +87,34 @@ const MessageBubble = ({ msg, activeChat, user, renderTextWithLinks, setSandboxF
               ["decrypt"]
             );
           } else {
-            // === 1-on-1 DECRYPTION ===
-            const receiver = activeChat.participants.find(p => p._id !== user._id);
-            const theirPubKey = await importPublicKey(receiver.publicKey);
-            sharedKey = await deriveSharedSecret(myPrivKey, theirPubKey);
-          }
+              // === 1-on-1 DECRYPTION ===
+              // Identify the other participant safely using string casting
+              const receiver = activeChat.participants.find(p => String(p._id) !== String(user._id));
+              
+              // Determine who sent this message to get the correct public key
+              const senderId = typeof msg.sender === 'object' ? String(msg.sender._id) : String(msg.sender);
+              const isMsgFromMe = senderId === String(user._id);
+              
+              // Choose the appropriate public key to derive the shared secret
+              let targetPublicKeyJWK;
+              if (isMsgFromMe) {
+                // If I sent it, use the receiver's public key to decrypt my copy
+                targetPublicKeyJWK = receiver?.publicKey;
+              } else {
+                // If they sent it, use the sender's public key from the participant list
+                const actualSender = activeChat.participants.find(p => String(p._id) === senderId);
+                targetPublicKeyJWK = actualSender?.publicKey || msg.sender?.publicKey;
+              }
+
+              if (!targetPublicKeyJWK) {
+                console.warn("Public key missing for decryption target identity:", senderId);
+                if (isMounted) setDisplayText("🔒 [Public Key Unavailable]");
+                return;
+              }
+
+              const theirPubKey = await importPublicKey(targetPublicKeyJWK);
+              sharedKey = await deriveSharedSecret(myPrivKey, theirPubKey);
+            }
 
           const ciphertextArray = JSON.parse(msg.text);
           const plainText = await decryptMessage(ciphertextArray, msg.iv, sharedKey);
@@ -934,7 +971,10 @@ export default function Chat() {
     if (!newMessage.trim() && !selectedFile) return; 
     if (!activeChat) return;
 
-    const receiver = activeChat.isGroup ? null : activeChat.participants.find(p => p._id !== user._id);
+    // FORCE STRING NORMALIZATION IN SEND PAYLOADS
+    const receiver = activeChat.isGroup 
+      ? null 
+      : activeChat.participants.find(p => String(p._id) !== String(user._id)); // ✅ FIX: Added String() wrapper
     
     // Variables to hold our payload
     let textToSend = newMessage;
@@ -1561,11 +1601,11 @@ export default function Chat() {
           {conversations.length === 0 && !showNewChat && <p style={{color: '#888', padding: '20px'}}>No conversations yet.</p>}
           
           {conversations.map(convo => {
-            const participant = convo.participants.find(p => p._id !== user._id);
-            const chatName = convo.isGroup ? convo.groupName : participant?.name || 'Unknown';
-            
-            // Check if the other person is online
-            const isOnline = !convo.isGroup && onlineUsers.some(id => String(id) === String(participant?._id));
+              // ✅ FIX: Cast participant ID lookup to string safely
+              const participant = convo.participants.find(p => String(p._id) !== String(user._id));
+              const chatName = convo.isGroup ? convo.groupName : participant?.name || 'Unknown';
+              
+              const isOnline = !convo.isGroup && onlineUsers.some(id => String(id) === String(participant?._id));
 
             return (
               <div key={convo._id} className={`conversation-item ...`} onClick={() => setActiveChat(convo)}>
