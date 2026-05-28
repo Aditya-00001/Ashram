@@ -33,104 +33,77 @@ const MessageBubble = ({ msg, activeChat, user, renderTextWithLinks, setSandboxF
   useEffect(() => {
     let isMounted = true;
     const decrypt = async () => {
+      // If the text does NOT start with a bracket '[', it was sent as plain text!
+      if (msg.text && !msg.text.startsWith('[')) {
+        if (isMounted) setDisplayText(msg.text);
+        if (isMounted) setIsDecrypting(false);
+        return;
+      }
+
       if (msg.iv?.length > 0 && msg.text?.startsWith('[')) {
         if (isMounted) setIsDecrypting(true);
         try {
+          // Check if the current browser environment even supports native Web Crypto APIs
+          if (!window.crypto || !window.crypto.subtle || !localStorage.getItem(`e2ee_priv_${user._id}`)) {
+            if (isMounted) setDisplayText("🔒 [Decryption Unsupported on this Device/Connection]");
+            return;
+          }
+
           let sharedKey;
           const myPrivKeyRaw = JSON.parse(localStorage.getItem(`e2ee_priv_${user._id}`));
           const myPrivKey = await importPrivateKey(myPrivKeyRaw);
 
-          if (activeChat.isGroup) {
+        if (activeChat.isGroup) {
             // === GROUP DECRYPTION ===
             // 1. Convert to standard object if it's a Map and use String for the ID
             const envelopesObj = msg.envelopes instanceof Map ? Object.fromEntries(msg.envelopes) : msg.envelopes;
-            const myId = user._id.toString();
+          const myId = user._id.toString();
+          if (!envelopesObj || !envelopesObj[myId]) { setDisplayText("🔒 [Envelope Missing]"); return; }
+          const myEnvelope = envelopesObj[myId];
 
-            if (!envelopesObj || !envelopesObj[myId]) {
-              console.warn("My ID not found in envelopes:", myId, envelopesObj);
-              setDisplayText("🔒 [Envelope Missing]");
-              return;
-            }
-            
-            const myEnvelope = envelopesObj[myId];
-            
-            // 2. Derive the secret used to "lock" this specific envelope
-            // =====================================================================
-            // ✅ FIXED: STRING-SAFE GROUP SENDER LOOKUP INJECTED HERE
-            // =====================================================================
-            const senderId = typeof msg.sender === 'object' ? String(msg.sender._id) : String(msg.sender);
-            const groupSender = activeChat.participants.find(p => String(p._id) === senderId);
-            const targetGroupPubKeyJWK = groupSender?.publicKey || msg.sender?.publicKey;
+          const senderId = typeof msg.sender === 'object' ? String(msg.sender._id) : String(msg.sender);
+          const groupSender = activeChat.participants.find(p => String(p._id) === senderId);
+          const targetGroupPubKeyJWK = groupSender?.publicKey || msg.sender?.publicKey;
 
-            if (!targetGroupPubKeyJWK) {
-              console.warn("Public key unavailable for group sender identity:", senderId);
-              setDisplayText("🔒 [Sender Key Unavailable]");
-              return;
-            }
-
-            const senderPubKey = await importPublicKey(targetGroupPubKeyJWK);
-            const derivationSecret = await deriveSharedSecret(myPrivKey, senderPubKey);
-            // =====================================================================
-            
-            // 3. Unlock the envelope to get the raw Message Key
-            const rawMessageKey = await decryptKeyBuffer(
-              myEnvelope.encryptedKey, 
-              myEnvelope.iv, 
-              derivationSecret
-            );
-            // 4. Import that raw key back as a CryptoKey object for AES-GCM
-            sharedKey = await window.crypto.subtle.importKey(
-              "raw", 
-              rawMessageKey, 
-              "AES-GCM", 
-              true, 
-              ["decrypt"]
-            );
-          } else {
+          const senderPubKey = await importPublicKey(targetGroupPubKeyJWK);
+          const derivationSecret = await deriveSharedSecret(myPrivKey, senderPubKey);
+          const rawMessageKey = await decryptKeyBuffer(myEnvelope.encryptedKey, myEnvelope.iv, derivationSecret);
+          sharedKey = await window.crypto.subtle.importKey("raw", rawMessageKey, "AES-GCM", true, ["decrypt"]);
+        } else {
               // === 1-on-1 DECRYPTION ===
-              // Identify the other participant safely using string casting
-              const receiver = activeChat.participants.find(p => String(p._id) !== String(user._id));
-              
-              // Determine who sent this message to get the correct public key
-              const senderId = typeof msg.sender === 'object' ? String(msg.sender._id) : String(msg.sender);
-              const isMsgFromMe = senderId === String(user._id);
-              
-              // Choose the appropriate public key to derive the shared secret
-              let targetPublicKeyJWK;
-              if (isMsgFromMe) {
-                // If I sent it, use the receiver's public key to decrypt my copy
-                targetPublicKeyJWK = receiver?.publicKey;
-              } else {
-                // If they sent it, use the sender's public key from the participant list
-                const actualSender = activeChat.participants.find(p => String(p._id) === senderId);
-                targetPublicKeyJWK = actualSender?.publicKey || msg.sender?.publicKey;
-              }
+          const receiver = activeChat.participants.find(p => String(p._id) !== String(user._id));
+          const senderId = typeof msg.sender === 'object' ? String(msg.sender._id) : String(msg.sender);
+          const isMsgFromMe = senderId === String(user._id);
+          
+          let targetPublicKeyJWK = isMsgFromMe ? receiver?.publicKey : (activeChat.participants.find(p => String(p._id) === senderId)?.publicKey || msg.sender?.publicKey);
 
-              if (!targetPublicKeyJWK) {
-                console.warn("Public key missing for decryption target identity:", senderId);
-                if (isMounted) setDisplayText("🔒 [Public Key Unavailable]");
-                return;
-              }
+          if (!targetPublicKeyJWK) {
+            if (isMounted) setDisplayText(msg.text.startsWith('[') ? "🔒 [Key Signature Missing]" : msg.text);
+            return;
+          }
 
-              const theirPubKey = await importPublicKey(targetPublicKeyJWK);
-              sharedKey = await deriveSharedSecret(myPrivKey, theirPubKey);
-            }
-
-          const ciphertextArray = JSON.parse(msg.text);
-          const plainText = await decryptMessage(ciphertextArray, msg.iv, sharedKey);
-          if (isMounted) setDisplayText(plainText);
-        } catch (err) {
-          console.error("Decryption failed", err);
-          if (isMounted) setDisplayText("🔒 [Decryption Error]");
-        } finally {
-          if (isMounted) setIsDecrypting(false);
+          const theirPubKey = await importPublicKey(targetPublicKeyJWK);
+          sharedKey = await deriveSharedSecret(myPrivKey, theirPubKey);
         }
-      }
-    };
 
-    decrypt();
-    return () => { isMounted = false; };
-  }, [msg, activeChat, user._id]);
+        const ciphertextArray = JSON.parse(msg.text);
+        const plainText = await decryptMessage(ciphertextArray, msg.iv, sharedKey);
+        if (isMounted) setDisplayText(plainText);
+      } catch (err) {
+        console.error("Decryption pipeline error caught:", err);
+        if (isMounted) setDisplayText("🔒 [Decryption Mismatch]");
+      } finally {
+        if (isMounted) setIsDecrypting(false);
+      }
+    } else {
+      // Fallback text render case
+      if (isMounted) setDisplayText(msg.text);
+    }
+  };
+
+  decrypt();
+  return () => { isMounted = false; };
+}, [msg, activeChat, user._id]);
 
   const isMine = msg.sender === user._id || (msg.sender && msg.sender._id === user._id);
   const senderName = msg.sender?.name || 'Member';
@@ -780,22 +753,27 @@ export default function Chat() {
           const data = await res.json();
           const localKey = localStorage.getItem(`e2ee_priv_${user._id}`);
           
+          // ✅ FIX 1: Safely check length of Arrays OR Objects using Object.keys()
+          const hasEscrowBackup = data.escrowedPrivateKey && Object.keys(data.escrowedPrivateKey).length > 0;
+          
           // CASE A: Cryptographic Escrow exists in the database
-          if (data.escrowedPrivateKey && data.escrowedPrivateKey.length > 0) {
-            setEscrowParams(data);
+          if (hasEscrowBackup) {
+            
+            // ✅ FIX 2: We MUST save the DB params to state so handleUnlockVault can use them!
+            setEscrowParams(data); 
+
             if (localKey) {
               setVaultStatus('unlocked');
             } else {
-              setVaultStatus('locked'); // Needs PIN to unlock on this device
+              // 🔒 IT WILL PROPERLY GO HERE NOW ON NEW DEVICES!
+              setVaultStatus('locked'); 
             }
-          } 
-          // CASE B: Escrow fields are completely missing from the database (Phase 6 legacy user)
+          }
+          // CASE B: Escrow fields are completely missing from the database
           else {
             if (localKey) {
-              // User has keys locally but hasn't backed them up yet. Prompt for PIN to sync!
               setVaultStatus('backup_required');
             } else {
-              // Fresh new user with no history at all
               setVaultStatus('setup_required');
             }
           }
@@ -991,72 +969,57 @@ export default function Chat() {
     // FORCE STRING NORMALIZATION IN SEND PAYLOADS
     const receiver = activeChat.isGroup 
       ? null 
-      : activeChat.participants.find(p => String(p._id) !== String(user._id)); // ✅ FIX: Added String() wrapper
+      : activeChat.participants.find(p => String(p._id) !== String(user._id)); 
     
     // Variables to hold our payload
     let textToSend = newMessage;
     let ivToSend = [];
     let groupEnvelopes = null;
+    
+    // Core Environment Check: Verify active hardware runtime supports Web Crypto
+    const isCryptoSupported = window.crypto && window.crypto.subtle && localStorage.getItem(`e2ee_priv_${user._id}`);
 
-    // ==========================================
-    // 🔒 E2EE ENCRYPTION BLOCK (1-on-1 Chats Only)
-    // ==========================================
-    if (activeChat.isGroup) {
-    // === GROUP E2EE (ENVELOPE) ===
-    const msgKey = await generateGroupMessageKey();
-    const encryptedMsg = await encryptMessage(newMessage, msgKey); // Uses AES-GCM
-    textToSend = JSON.stringify(encryptedMsg.ciphertext);
-    ivToSend = encryptedMsg.iv;
-
-    const myPrivKeyRaw = JSON.parse(localStorage.getItem(`e2ee_priv_${user._id}`));
-    const myPrivKey = await importPrivateKey(myPrivKeyRaw);
-
-    groupEnvelopes = {};
-    for (const p of activeChat.participants) {
-      if (!p.publicKey) continue; // Skip members who haven't initialized their keys yet
-      
+    if (activeChat.isGroup && isCryptoSupported) {
       try {
-        // Import the participant's public key securely
-        const theirPubKey = await importPublicKey(p.publicKey);
-        
-        // Lock a distinct copy of the message key inside this member's envelope
-        groupEnvelopes[p._id] = await encryptKeyForRecipient(msgKey, myPrivKey, theirPubKey);
-      } catch (err) {
-        // Captures errors gracefully if a single key corrupts, preventing a complete send failure
-        console.error(`Failed to lock digital envelope for user ${p._id}:`, err);
-      }
-    }} else if (!activeChat.isGroup && receiver) {
-      if (!receiver.publicKey) {
-        alert("This user hasn't updated their app to support encryption yet!");
-        return;
-      }
+        const msgKey = await generateGroupMessageKey();
+        const encryptedMsg = await encryptMessage(newMessage, msgKey);
+        textToSend = JSON.stringify(encryptedMsg.ciphertext);
+        ivToSend = encryptedMsg.iv;
 
+        const myPrivKeyRaw = JSON.parse(localStorage.getItem(`e2ee_priv_${user._id}`));
+        const myPrivKey = await importPrivateKey(myPrivKeyRaw);
+
+        groupEnvelopes = {};
+        for (const p of activeChat.participants) {
+          if (!p.publicKey) continue;
+          const theirPubKey = await importPublicKey(p.publicKey);
+          groupEnvelopes[p._id] = await encryptKeyForRecipient(msgKey, myPrivKey, theirPubKey);
+        }
+      } catch (e) {
+        console.warn("Group Crypto execution failed, falling back to clean text delivery.", e);
+        textToSend = newMessage;
+        ivToSend = [];
+        groupEnvelopes = null;
+      }
+    } else if (!activeChat.isGroup && receiver && isCryptoSupported && receiver.publicKey) {
       try {
-        // 1. Get My Private Key from LocalStorage
         const myPrivKeyJWK = JSON.parse(localStorage.getItem(`e2ee_priv_${user._id}`));
         const myPrivKey = await importPrivateKey(myPrivKeyJWK);
-        
-        // 2. Get Their Public Key from the active chat data
         const theirPubKey = await importPublicKey(receiver.publicKey);
-        
-        // 3. Derive the Shared Secret!
         const sharedSecret = await deriveSharedSecret(myPrivKey, theirPubKey);
         
-        // 4. Encrypt the message text
         const encryptedData = await encryptMessage(newMessage, sharedSecret);
-        
-        // 5. Convert ciphertext array to a JSON string so MongoDB can store it as a standard String
         textToSend = JSON.stringify(encryptedData.ciphertext);
         ivToSend = encryptedData.iv;
-        
-        console.log("🔒 Message Encrypted Successfully!");
       } catch (err) {
-        console.error("Encryption failed:", err);
-        alert("Failed to encrypt message. Connection is not secure.");
-        return; // Stop the send if encryption fails!
+        console.warn("1-on-1 Crypto execution failed, bypassing layer safely.", err);
+        textToSend = newMessage;
+        ivToSend = [];
       }
     }
-    // ==========================================
+
+    // ✅ NOTICE: The old redundant try/catch block is completely removed from here! 
+    // We go straight to sending the payload to the database!
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/send`, {
@@ -1065,9 +1028,9 @@ export default function Chat() {
         body: JSON.stringify({ 
           receiverId: receiver ? receiver._id : null, 
           conversationId: activeChat.isNew ? null : activeChat._id,
-          text: textToSend,       // This is now scrambled ciphertext!
+          text: textToSend,       // Scrambled ciphertext OR plaintext fallback!
           iv: ivToSend,
-          envelopes: groupEnvelopes,           // The IV needed for decryption
+          envelopes: groupEnvelopes,           
           attachment: selectedFile 
         })
       });
@@ -1084,10 +1047,6 @@ export default function Chat() {
 
         // Broadcast to everyone else
         socketRef.current.emit('send_message', savedMessage);
-        
-        // =========================================================
-        // --- INSTANT AUTO-REACTIVE UPDATE FOR THE SENDER ---
-        // =========================================================
         
         // 1. Instantly append the message to our own chat screen
         setMessages((prev) => [...prev, savedMessage]);
@@ -1110,7 +1069,6 @@ export default function Chat() {
       console.error("Failed to send message", err);
     }
   };
-
   
 
   const handleSendPoll = async (pollData) => {
@@ -1686,6 +1644,39 @@ export default function Chat() {
                     + Add
                   </button>
                 )}
+
+                {/* ========================================================
+                    🚨 FACTORY RESET ENCRYPTION BUTTON 
+                    Wipes corrupted keys from MongoDB and LocalStorage
+                    ======================================================== */}
+                <button 
+                  onClick={async () => {
+                    const confirmReset = window.confirm("🚨 WARNING: This will permanently reset your encryption keys to fix mismatch errors. Old messages will stay unreadable, but all new messages will work perfectly. Continue?");
+                    if (!confirmReset) return;
+
+                    // 1. Wipe local storage ghost keys
+                    localStorage.removeItem(`e2ee_priv_${user._id}`);
+                    
+                    // 2. Wipe the corrupted keys from MongoDB
+                    try {
+                      await fetch(`${import.meta.env.VITE_API_URL}/api/users/escrow`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+                        // Setting everything to null forces the database to recognize you as a "New" user
+                        body: JSON.stringify({ escrowedPrivateKey: null, escrowSalt: null, escrowIv: null, publicKey: null })
+                      });
+                    } catch (e) {
+                      console.error("DB Wipe failed", e);
+                    }
+
+                    // 3. Force reload to trigger clean setup
+                    window.location.reload();
+                  }}
+                  style={{ background: '#ff4757', border: 'none', color: '#fff', padding: '4px 10px', borderRadius: '12px', fontSize: '0.8rem', cursor: 'pointer', marginLeft: '10px', fontWeight: 'bold' }}
+                  title="Fix Broken Encryption"
+                >
+                  🚨 Reset Encryption
+                </button>
                 {/* --- NEW: CHAT VAULT BUTTON --- */}
                 <button 
                   onClick={() => setShowVault(true)}

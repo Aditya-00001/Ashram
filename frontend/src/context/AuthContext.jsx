@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         console.error("❌ E2EE Initialization Failed:", error);
       }
-    };
+    }; 
 
     initializeKeys();
   }, [user]);

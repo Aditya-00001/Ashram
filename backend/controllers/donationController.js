@@ -100,17 +100,37 @@ export const verifyRazorpayPayment = async (req, res) => {
 // ... (keep your existing getMyDonations and getDonations functions here) ...
 
 
-// @desc    Get logged in user's donations
+// @desc    Get logged in user donations with pagination
 // @route   GET /api/donations/my-donations
-// @access  Private (Regular Users)
+// @access  Private
 export const getMyDonations = async (req, res) => {
   try {
-    // req.user._id comes from our protect middleware!
-    const donations = await Donation.find({ user: req.user._id }).sort({ createdAt: -1 });
+    // 1. Get page and limit from the URL query, fallback to defaults
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
     
-    res.status(200).json(donations);
+    // 2. Calculate how many documents to skip
+    const skip = (page - 1) * limit;
+
+    // 3. Count total documents for this user (so frontend knows total pages)
+    const total = await Donation.countDocuments({ user: req.user._id });
+
+    // 4. Fetch only the specific chunk of data, sorted newest first
+    const donations = await Donation.find({ user: req.user._id })
+      .sort({ createdAt: -1 }) // -1 means descending (newest first)
+      .skip(skip)
+      .limit(limit);
+
+    // 5. Send back the structured pagination object
+    res.json({
+      donations,
+      page,
+      totalPages: Math.ceil(total / limit),
+      totalDonations: total
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch donations', error: error.message });
+    console.error('Error fetching user donations:', error);
+    res.status(500).json({ message: 'Server Error fetching donations' });
   }
 };
 

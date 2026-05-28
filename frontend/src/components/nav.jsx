@@ -41,8 +41,14 @@ export default function Nav() {
   };
 
   const handleLogout = () => {
+    // 1. Destroy the local encryption keys for security!
+    if (user) {
+      localStorage.removeItem(`e2ee_priv_${user._id}`);
+    }
+    
+    // 2. Call your existing logout context function
     logout();
-    closeMenu();
+    closeMenu(); // (Only needed in nav.jsx)
     navigate('/login');
   };
 
