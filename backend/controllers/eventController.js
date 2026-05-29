@@ -9,12 +9,19 @@ export const getEvents = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const total = await Event.countDocuments();
-    const events = await Event.find()
-      .sort({ createdAt: -1 }) // Or however you prefer to sort them
+    // --- ADDED SEARCH LOGIC ---
+    const search = req.query.search || '';
+    const query = search ? {
+      title: { $regex: search, $options: 'i' } // Case-insensitive search on the title
+    } : {};
+
+    // Apply the query to both the count and the find methods
+    const total = await Event.countDocuments(query);
+    const events = await Event.find(query)
+      .sort({ createdAt: -1 }) 
       .skip(skip)
       .limit(limit);
-    // console.log('Fetched Events:', events); // Debugging log
+      
     res.status(200).json({
       events,
       currentPage: page,
